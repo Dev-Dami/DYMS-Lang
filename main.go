@@ -10,13 +10,13 @@ func main() {
     code := "42 + (5 - 3) * 2"
     tokens := lexer.Tokenize(code)
 
-    parser := interpreter.NewParser(tokens)
+    parser := runtime.NewParser(tokens)
     astNode, err := parser.Parse()
     if err != nil {
         panic(err)
     }
 
-    result, err := interpreter.Evaluate(astNode)
+    result, err := runtime.Evaluate(astNode)
     if err != nil {
         panic(err)
     }

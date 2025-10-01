@@ -1,4 +1,4 @@
-package interpreter
+package runtime
 
 import (
 	"fmt"
