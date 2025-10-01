@@ -2,7 +2,7 @@ package main
 
 import (
     "fmt"
-    "holygo/interpreter"
+    "holygo/runtime"
     "holygo/lexer"
 )
 
