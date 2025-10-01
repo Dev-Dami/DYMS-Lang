@@ -11,12 +11,12 @@ type Parser struct {
 	pos    int
 }
 
-// Create new parser
+// create new parser
 func New(tokens []lexer.Token) *Parser {
 	return &Parser{tokens: tokens, pos: 0}
 }
 
-// Helpers
+// helpers
 func (p *Parser) peek() lexer.Token {
 	if p.pos >= len(p.tokens) {
 		return lexer.Token{Type: -1, Value: ""}
@@ -30,7 +30,7 @@ func (p *Parser) consume() lexer.Token {
 	return tok
 }
 
-// Parse entire program
+// parse entire program
 func (p *Parser) ParseProgram() *ast.Program {
 	prog := &ast.Program{Body: []ast.Stmt{}}
 	for p.pos < len(p.tokens) {
@@ -42,12 +42,12 @@ func (p *Parser) ParseProgram() *ast.Program {
 	return prog
 }
 
-// For now, treat everything as an expression statement
+// treat everything -> expression statement
 func (p *Parser) parseStmt() ast.Stmt {
 	return p.parseExpr()
 }
 
-// Parse an expression (supports binary +, -, *, /)
+// parse an expression
 func (p *Parser) parseExpr() ast.Expr {
 	left := p.parsePrimary()
 
@@ -68,7 +68,7 @@ func (p *Parser) parseExpr() ast.Expr {
 	return left
 }
 
-// Parse basic literals and identifiers
+// parse literals and identifiers
 func (p *Parser) parsePrimary() ast.Expr {
 	tok := p.consume()
 	switch tok.Type {
@@ -88,7 +88,7 @@ func (p *Parser) parsePrimary() ast.Expr {
 	}
 }
 
-// Helper to convert string -> float64
+// convert string -> float64
 func toNumber(s string) float64 {
 	var n float64
 	fmt.Sscanf(s, "%f", &n)
