@@ -1,0 +1,43 @@
+package runtime
+
+import "fmt"
+
+// Evaluates a binary expression using numeric operands
+func EvalBinaryExpr(lhs float64, rhs float64, operator string) float64 {
+	switch operator {
+	case "+":
+		return lhs + rhs
+	case "-":
+		return lhs - rhs
+	case "*":
+		return lhs * rhs
+	case "/":
+		if rhs == 0 {
+			panic("division by zero")
+		}
+		return lhs / rhs
+	case "%":
+		return float64(int(lhs) % int(rhs))
+	default:
+		panic(fmt.Sprintf("unknown operator: %s", operator))
+	}
+}
+
+// Evaluates an identifier using the environment
+func EvalIdentifier(ident *IdentifierExpr, env *Environment) interface{} {
+	return env.LookupVar(ident.Symbol)
+}
+
+// Evaluates a list of statements as a "program"
+func EvalProgram(stmts []Stmt, env *Environment) interface{} {
+	var last interface{}
+	for _, stmt := range stmts {
+		last, _ = Evaluate(stmt)
+	}
+	return last
+}
+
+// Evaluates a variable declaration in the environment
+func EvalVarDeclaration(name string, value interface{}, env *Environment) interface{} {
+	return env.DeclareVar(name, value)
+}
