@@ -23,5 +23,7 @@ func main() {
         panic(err)
     }
 
-    fmt.Println("Result:", result)
+    if result != nil {
+        fmt.Println("Result:", result)
+    }
 }

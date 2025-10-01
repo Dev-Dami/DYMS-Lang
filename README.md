@@ -5,9 +5,14 @@ HolyGo is a lightweight, embeddable interpreter for a simple, dynamically-typed 
 ## Features
 
 *   **Dynamic Typing**: The language is dynamically typed, which means that you don't have to declare the type of a variable before you use it.
-*   **First-Class Functions**: Functions are first-class citizens, which means that they can be passed as arguments to other functions, returned from functions, and assigned to variables.
-*   **Closures**: The language supports closures, which means that a function can access the variables of its enclosing scope, even after the enclosing function has returned.
-*   **Garbage Collection**: The language has a built-in garbage collector, which automatically frees memory that is no longer in use.
+*   **Variables**: The language supports variable declarations using the `let`, `var`, and `const` keywords.
+*   **Data Types**: Supports numbers (float64) and strings.
+*   **Operators**: Basic arithmetic operators: `+`, `-`, `*`, `/`.
+*   **Built-in Functions**:
+    *   `systemout(...)`: Prints arguments to the console using the log package.
+    *   `println(...)`: Prints arguments to the console.
+    *   `printf(format, ...)`: Prints formatted strings.
+    *   `logln(...)`: Prints arguments to the console using the log package.
 
 ## Architecture
 
@@ -15,27 +20,44 @@ The interpreter is divided into the following components:
 
 *   **Lexer**: The lexer is responsible for breaking the source code into a stream of tokens.
 *   **Parser**: The parser takes the tokens from the lexer and builds an Abstract Syntax Tree (AST).
-*   **Compiler**: The compiler takes the AST and compiles it into a series of bytecode instructions.
-*   **Virtual Machine**: The virtual machine executes the bytecode instructions.
+*   **Evaluator**: The evaluator traverses the AST and evaluates the code.
 
 ## Getting Started
 
-To get started with HolyGo, you will need to have Go installed on your system. You can then build the interpreter by running the following command:
+To get started with HolyGo, you will need to have Go installed on your system. You can then run the interpreter by running the following command:
 
 ```bash
-go build
+go run .
 ```
 
-This will create an executable file called `holygo` in the current directory. You can then run the interpreter by running the following command:
+This will execute the code in the `test.hg` file.
 
-```bash
-./holygo
+## Usage/Examples
+
+Here is an example of a HolyGo program:
+
+```go
+let x = 10
+var y = 20
+const z = 30
+
+systemout(x + y + z)
+println("Hello from println")
+printf("x = %d, y = %d, z = %d\n", x, y, z)
+logln("This is a log message")
+logln(x + 2)
 ```
 
-This will start the interactive Read-Eval-Print Loop (REPL), where you can enter and execute HolyGo code.
+## Error Handling
+
+The interpreter will report errors for various issues, including:
+
+*   **Syntax Errors**: Such as unrecognized characters or malformed statements.
+*   **Runtime Errors**: Such as division by zero, or trying to use a variable that has not been declared.
 
 ## Roadmap
 
-*   **Add support for more data types**: The language currently only supports numbers and strings. We plan to add support for more data types, such as booleans, arrays, and maps.
-*   **Improve the error handling**: The error handling is currently very basic. We plan to improve the error handling to make it more user-friendly.
-*   **Add a standard library**: We plan to add a standard library that will provide a set of useful functions for working with strings, numbers, and other data types.
+*   **Add support for more data types**: Booleans, arrays, and maps.
+*   **Control Flow**: Add support for `if/else` statements and `for` loops.
+*   **Improve the error handling**: Make error messages more user-friendly.
+*   **Add a standard library**: Provide a set of useful functions for working with strings, numbers, and other data types.

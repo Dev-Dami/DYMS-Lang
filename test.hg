@@ -1,3 +1,9 @@
 let x = 10
-let y = 20
-x + y
+var y = 20
+const z = 30
+
+systemout(x + y + z)
+println("Hello from println")
+printf("x = %d, y = %d, z = %d\n", x, y, z)
+logln("This is a log message")
+logln(x + 2)

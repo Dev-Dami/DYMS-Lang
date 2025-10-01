@@ -12,15 +12,19 @@ const (
 	// Literal Types
 	Number TokenType = iota
 	Identifier
+	String
 
 	// Keywords
 	Let
+	Var
+	Const
 
 	// Grouping * Operators
 	BinaryOperator
 	Equals
 	OpenParen
 	CloseParen
+	Comma
 )
 
 // Stringer for TokenType
@@ -32,6 +36,10 @@ func (t TokenType) String() string {
 		return "Identifier"
 	case Let:
 		return "Let"
+	case Var:
+		return "Var"
+	case Const:
+		return "Const"
 	case BinaryOperator:
 		return "BinaryOperator"
 	case Equals:
@@ -40,6 +48,8 @@ func (t TokenType) String() string {
 		return "OpenParen"
 	case CloseParen:
 		return "CloseParen"
+	case Comma:
+		return "Comma"
 	default:
 		return "Unknown"
 	}
@@ -59,6 +69,8 @@ func token(value string, t TokenType) Token {
 // keyword lookup
 var keywords = map[string]TokenType{
 	"let": Let,
+	"var": Var,
+	"const": Const,
 }
 
 func isAlpha(ch rune) bool {
@@ -82,11 +94,23 @@ func Tokenize(sourceCode string) []Token {
 		ch := src[0]
 
 		// Single-char tokens
-		if ch == '(' {
+		if ch == '"' {
+			src = src[1:] // consume "
+			str := ""
+			for len(src) > 0 && src[0] != '"' {
+				str += string(src[0])
+				src = src[1:]
+			}
+			src = src[1:] // consume "
+			tokens = append(tokens, token(str, String))
+		} else if ch == '(' {
 			tokens = append(tokens, token(string(ch), OpenParen))
 			src = src[1:]
 		} else if ch == ')' {
 			tokens = append(tokens, token(string(ch), CloseParen))
+			src = src[1:]
+		} else if ch == ',' {
+			tokens = append(tokens, token(string(ch), Comma))
 			src = src[1:]
 		} else if ch == '+' || ch == '-' || ch == '*' || ch == '/' {
 			tokens = append(tokens, token(string(ch), BinaryOperator))

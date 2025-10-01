@@ -44,21 +44,24 @@ func (p *Parser) ParseProgram() *ast.Program {
 
 // treat everything -> expression statement
 func (p *Parser) parseStmt() ast.Stmt {
-	if p.peek().Type == lexer.Let {
+	switch p.peek().Type {
+	case lexer.Let, lexer.Var, lexer.Const:
 		return p.parseVarDeclaration()
+	default:
+		return p.parseExpr()
 	}
-	return p.parseExpr()
 }
 
 func (p *Parser) parseVarDeclaration() ast.Stmt {
-	p.consume() // consume let
+		isConstant := p.consume().Type == lexer.Const
 	identifier := p.consume().Value
+
 	if p.peek().Type != lexer.Equals {
 		panic("Expected '=' after identifier in variable declaration")
 	}
 	p.consume() // consume equals
 	value := p.parseExpr()
-	return &ast.VarDeclaration{Identifier: identifier, Value: value}
+	return &ast.VarDeclaration{Identifier: identifier, Value: value, Constant: isConstant}
 }
 
 // parse an expression
@@ -75,11 +78,32 @@ func (p *Parser) parseExpr() ast.Expr {
 				Right:    right,
 				Operator: op,
 			}
+		} else if tok.Type == lexer.OpenParen {
+			left = p.parseCallExpr(left)
 		} else {
 			break
 		}
 	}
 	return left
+}
+
+func (p *Parser) parseCallExpr(callee ast.Expr) ast.Expr {
+	p.consume() // consume open paren
+	args := []ast.Expr{}
+	if p.peek().Type != lexer.CloseParen {
+		for {
+			args = append(args, p.parseExpr())
+			if p.peek().Type == lexer.CloseParen {
+				break
+			}
+			if p.peek().Type != lexer.Comma {
+				panic(fmt.Sprintf("Expected ',' or ')' in argument list, but got %s", p.peek().Value))
+			}
+			p.consume() // consume comma
+		}
+	}
+	p.consume() // consume close paren
+	return &ast.CallExpr{Callee: callee, Args: args}
 }
 
 // parse literals and identifiers
@@ -90,6 +114,8 @@ func (p *Parser) parsePrimary() ast.Expr {
 		return &ast.NumericLiteral{Value: toNumber(tok.Value)}
 	case lexer.Identifier:
 		return &ast.Identifier{Symbol: tok.Value}
+	case lexer.String:
+		return &ast.StringLiteral{Value: tok.Value}
 	case lexer.OpenParen:
 		expr := p.parseExpr()
 		if p.peek().Type == lexer.CloseParen {

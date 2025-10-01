@@ -40,7 +40,4 @@ func EvalProgram(program *ast.Program, env *Environment) interface{} {
 	return last
 }
 
-// Evaluates a variable declaration in the environment
-func EvalVarDeclaration(name string, value interface{}, env *Environment) interface{} {
-	return env.DeclareVar(name, value)
-}
+

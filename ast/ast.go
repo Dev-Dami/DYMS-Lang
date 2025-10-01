@@ -12,6 +12,8 @@ const (
 	IdentifierNode     NodeType = "Identifier"
 	BinaryExprNode     NodeType = "BinaryExpr"
 	VarDeclarationNode NodeType = "VarDeclaration"
+	CallExprNode       NodeType = "CallExpr"
+	StringLiteralNode  NodeType = "StringLiteral"
 )
 
 //stat interface
@@ -64,14 +66,32 @@ type NumericLiteral struct {
 func (n *NumericLiteral) Kind() NodeType { return NumericLiteralNode }
 func (n *NumericLiteral) exprNode()      {}
 
+// String Literal
+type StringLiteral struct {
+	Value string
+}
+
+func (s *StringLiteral) Kind() NodeType { return StringLiteralNode }
+func (s *StringLiteral) exprNode()      {}
+
 // Variable Declaration
 type VarDeclaration struct {
 	Identifier string
 	Value      Expr
+	Constant   bool
 }
 
 func (v *VarDeclaration) Kind() NodeType { return VarDeclarationNode }
 func (v *VarDeclaration) exprNode()      {}
+
+// Call Expression
+type CallExpr struct {
+	Callee Expr
+	Args   []Expr
+}
+
+func (c *CallExpr) Kind() NodeType { return CallExprNode }
+func (c *CallExpr) exprNode()      {}
 
 func PrettyPrint(e Expr) string {
 	switch node := e.(type) {
