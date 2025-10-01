@@ -4,17 +4,15 @@ import (
     "fmt"
     "holygo/runtime"
     "holygo/lexer"
+    "holygo/parser"
 )
 
 func main() {
     code := "42 + (5 - 3) * 2"
     tokens := lexer.Tokenize(code)
 
-    parser := runtime.NewParser(tokens)
-    astNode, err := parser.Parse()
-    if err != nil {
-        panic(err)
-    }
+    parser := parser.New(tokens)
+    astNode := parser.ParseProgram()
 
     result, err := runtime.Evaluate(astNode)
     if err != nil {

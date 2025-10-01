@@ -1,6 +1,9 @@
 package runtime
 
-import "fmt"
+import (
+	"fmt"
+	"holygo/ast"
+)
 
 // Evaluates a binary expression using numeric operands
 func EvalBinaryExpr(lhs float64, rhs float64, operator string) float64 {
@@ -24,14 +27,14 @@ func EvalBinaryExpr(lhs float64, rhs float64, operator string) float64 {
 }
 
 // Evaluates an identifier using the environment
-func EvalIdentifier(ident *IdentifierExpr, env *Environment) interface{} {
+func EvalIdentifier(ident *ast.Identifier, env *Environment) interface{} {
 	return env.LookupVar(ident.Symbol)
 }
 
 // Evaluates a list of statements as a "program"
-func EvalProgram(stmts []Stmt, env *Environment) interface{} {
+func EvalProgram(program *ast.Program, env *Environment) interface{} {
 	var last interface{}
-	for _, stmt := range stmts {
+	for _, stmt := range program.Body {
 		last, _ = Evaluate(stmt)
 	}
 	return last
