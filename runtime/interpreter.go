@@ -5,14 +5,15 @@ import (
 	"holygo/ast"
 )
 
+var env = NewEnvironment(nil)
+
 // Evaluator
 func Evaluate(stmt ast.Stmt) (interface{}, error) {
 	switch s := stmt.(type) {
 	case *ast.NumericLiteral:
 		return s.Value, nil
 	case *ast.Identifier:
-		// In a real interpreter, you'd look up the variable's value.
-		return s.Symbol, nil
+		return env.LookupVar(s.Symbol), nil
 	case *ast.BinaryExpr:
 		leftVal, err := Evaluate(s.Left)
 		if err != nil {
@@ -55,6 +56,12 @@ func Evaluate(stmt ast.Stmt) (interface{}, error) {
 			}
 		}
 		return lastResult, nil
+	case *ast.VarDeclaration:
+		value, err := Evaluate(s.Value)
+		if err != nil {
+			return nil, err
+		}
+		return env.DeclareVar(s.Identifier, value), nil
 	default:
 		return nil, fmt.Errorf("unknown statement type: %T", s)
 	}

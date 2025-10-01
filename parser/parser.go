@@ -44,7 +44,21 @@ func (p *Parser) ParseProgram() *ast.Program {
 
 // treat everything -> expression statement
 func (p *Parser) parseStmt() ast.Stmt {
+	if p.peek().Type == lexer.Let {
+		return p.parseVarDeclaration()
+	}
 	return p.parseExpr()
+}
+
+func (p *Parser) parseVarDeclaration() ast.Stmt {
+	p.consume() // consume let
+	identifier := p.consume().Value
+	if p.peek().Type != lexer.Equals {
+		panic("Expected '=' after identifier in variable declaration")
+	}
+	p.consume() // consume equals
+	value := p.parseExpr()
+	return &ast.VarDeclaration{Identifier: identifier, Value: value}
 }
 
 // parse an expression
