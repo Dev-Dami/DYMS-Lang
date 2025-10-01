@@ -6,10 +6,18 @@ import (
     "holygo/lexer"
     "holygo/parser"
     "io/ioutil"
+    "os"
 )
 
 func main() {
-    code, err := ioutil.ReadFile("test.hg")
+    var filename string
+    if len(os.Args) > 1 {
+        filename = os.Args[1]
+    } else {
+        filename = "test.hg"
+    }
+
+    code, err := ioutil.ReadFile(filename)
     if err != nil {
         panic(err)
     }
