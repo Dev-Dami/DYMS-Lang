@@ -2,16 +2,16 @@ package main
 
 import (
 	"fmt"
-	"holygo/lexer"
-	"holygo/parser"
-	"holygo/runtime"
+	"DYMS/lexer"
+	"DYMS/parser"
+	"DYMS/runtime"
 	"io/ioutil"
 	"os"
 )
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: holygo <filename>")
+		fmt.Println("Usage: hg <filename>")
 		os.Exit(1)
 	}
 

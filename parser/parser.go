@@ -2,8 +2,8 @@ package parser
 
 import (
 	"fmt"
-	"holygo/ast"
-	"holygo/lexer"
+	"DYMS/ast"
+	"DYMS/lexer"
 	"strconv"
 )
 

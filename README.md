@@ -1,6 +1,6 @@
-# HolyGo Interpreter
+# DYMS — Dynamic Yet Minimal System Interpreter
 
-HolyGo is a lightweight, embeddable interpreter for a simple, dynamically-typed scripting language. It is written in Go and is designed to be easily integrated into other Go applications.
+DYMS is a lightweight, embeddable interpreter for a simple, dynamically-typed scripting language. It is written in Go and is designed to be easily integrated into other Go applications.
 
 ## Version
 
@@ -18,6 +18,7 @@ update 0.1 demo
   - `println(...)`: Prints arguments to the console.
   - `printf(format, ...)`: Prints formatted strings.
   - `logln(...)`: Prints arguments to the console using the log package.
+- **Control Flow**: support for `if/else` statements and `for` loops.
 
 ## Architecture
 
@@ -29,7 +30,7 @@ The interpreter is divided into the following components:
 
 ## Getting Started
 
-To get started with HolyGo, you will need to have Go installed on your system. You can then run the interpreter by running the following command:
+To get started with DYMS, you will need to have Go installed on your system. You can then run the interpreter by running the following command:
 
 ```bash
 go run . test.hg
@@ -71,6 +72,5 @@ The interpreter will report errors for various issues, including:
 ## Roadmap
 
 - **Add support for more data types**: Booleans, arrays, and maps.
-- **Control Flow**: Add support for `if/else` statements and `for` loops.
 - **Improve the error handling**: Make error messages more user-friendly.
 - **Add a standard library**: Provide a set of useful functions for working with strings, numbers, and other data types.
