@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"DYMS/ast"
 	"log"
+	"time"
 )
 
 // Function represents a function in the language.
@@ -16,6 +17,12 @@ var GlobalEnv = NewEnvironment(nil)
 
 func init() {
 	log.SetFlags(0)
+
+	// Built-in modules registry
+	m := builtinModules()
+	// Expose a simple modules map under "__modules__" if needed later
+	_ = m
+
 	GlobalEnv.DeclareVar("systemout", Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
 		for _, arg := range args {
 			log.Println(Pretty(arg))
@@ -133,6 +140,12 @@ func Evaluate(stmt ast.Stmt, scope *Environment) (RuntimeVal, *Error) {
 		}
 	case *ast.Identifier:
 		return scope.LookupVar(s.Symbol), nil
+	case *ast.MemberExpr:
+		obj, err := Evaluate(s.Object, scope)
+		if err != nil {
+			return nil, err
+		}
+		return evalMember(obj, s.Property.Symbol)
 	case *ast.BlockStatement:
 		return evalBlockStatement(s, scope)
 	case *ast.IfStatement:
@@ -143,6 +156,8 @@ func Evaluate(stmt ast.Stmt, scope *Environment) (RuntimeVal, *Error) {
 		return evalWhileStatement(s, scope)
 	case *ast.AssignmentExpr:
 		return evalAssignmentExpr(s, scope)
+	case *ast.ImportStatement:
+		return evalImport(s, scope)
 	default:
 		return nil, NewError(fmt.Sprintf("unknown statement type: %T", s), 0, 0)
 	}
@@ -379,4 +394,42 @@ func isTruthy(val RuntimeVal) bool {
 		return s.Value != ""
 	}
 	return true
+}
+
+// Module system
+func builtinModules() map[string]*MapVal {
+	mods := map[string]*MapVal{}
+	// time module
+	timeMod := &MapVal{Properties: map[string]RuntimeVal{}}
+	timeMod.Properties["now"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		ns := time.Now().UnixNano()
+		secs := float64(ns) / 1e9
+		return &NumberVal{Value: secs}, nil
+	})
+	mods["time"] = timeMod
+	return mods
+}
+
+func evalImport(imp *ast.ImportStatement, scope *Environment) (RuntimeVal, *Error) {
+	mods := builtinModules()
+	mod, ok := mods[imp.Path]
+	if !ok {
+		return nil, NewError(fmt.Sprintf("unknown module: %s", imp.Path), 0, 0)
+	}
+	// Bind alias as constant
+	scope.DeclareVar(imp.Alias, mod, true)
+	return mod, nil
+}
+
+func evalMember(obj RuntimeVal, prop string) (RuntimeVal, *Error) {
+	switch o := obj.(type) {
+	case *MapVal:
+		val, ok := o.Properties[prop]
+		if !ok {
+			return nil, NewError(fmt.Sprintf("unknown property '%s'", prop), 0, 0)
+		}
+		return val, nil
+	default:
+		return nil, NewError(fmt.Sprintf("cannot access property '%s' on %s", prop, obj.Type()), 0, 0)
+	}
 }

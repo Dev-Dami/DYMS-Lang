@@ -25,6 +25,8 @@ const (
 	ForRange
 	True
 	False
+	Import
+	As
 
 	// Grouping * Operators
 	BinaryOperator
@@ -39,6 +41,7 @@ const (
 	CloseBracket
 	Colon
 	Comma
+	Dot
 )
 
 // Stringer for TokenType
@@ -94,6 +97,12 @@ func (t TokenType) String() string {
 		return "Colon"
 	case Comma:
 		return "Comma"
+	case Dot:
+		return "Dot"
+	case Import:
+		return "Import"
+	case As:
+		return "As"
 	default:
 		return "Unknown"
 	}
@@ -123,6 +132,8 @@ var keywords = map[string]TokenType{
 	"for range": ForRange,
 	"true":      True,
 	"false":     False,
+	"import":    Import,
+	"as":        As,
 }
 
 func isAlpha(ch rune) bool {
@@ -191,6 +202,10 @@ func Tokenize(sourceCode string) []Token {
 			col++
 		} else if ch == ',' {
 			tokens = append(tokens, token(string(ch), Comma, line, col))
+			src = src[1:]
+			col++
+		} else if ch == '.' {
+			tokens = append(tokens, token(string(ch), Dot, line, col))
 			src = src[1:]
 			col++
 		} else if ch == '+' || ch == '-' || ch == '*' || ch == '/' {

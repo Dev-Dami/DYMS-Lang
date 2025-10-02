@@ -58,6 +58,8 @@ func (p *Parser) ParseProgram() (*ast.Program, *runtime.Error) {
 // treat everything -> expression statement
 func (p *Parser) parseStmt() (ast.Stmt, *runtime.Error) {
 	switch p.peek().Type {
+	case lexer.Import:
+		return p.parseImportStatement()
 	case lexer.Let, lexer.Var, lexer.Const:
 		return p.parseVarDeclaration()
 	case lexer.If:
@@ -323,12 +325,12 @@ func (p *Parser) parseMultiplicativeExpr() (ast.Expr, *runtime.Error) {
 }
 
 func (p *Parser) parseCallExpr() (ast.Expr, *runtime.Error) {
-	callee, err := p.parsePrimary()
+	callee, err := p.parseMemberExpr()
 	if err != nil {
 		return nil, err
 	}
 
-	if p.peek().Type == lexer.OpenParen {
+	for p.peek().Type == lexer.OpenParen {
 		p.consume() // consume open paren
 		args := []ast.Expr{}
 		if p.peek().Type != lexer.CloseParen {
@@ -351,10 +353,26 @@ func (p *Parser) parseCallExpr() (ast.Expr, *runtime.Error) {
 		if err != nil {
 			return nil, err
 		}
-		return &ast.CallExpr{Callee: callee, Args: args}, nil
+		callee = &ast.CallExpr{Callee: callee, Args: args}
 	}
 
 	return callee, nil
+}
+
+func (p *Parser) parseMemberExpr() (ast.Expr, *runtime.Error) {
+	obj, err := p.parsePrimary()
+	if err != nil {
+		return nil, err
+	}
+	for p.peek().Type == lexer.Dot {
+		p.consume() // '.'
+		prop, err := p.expect(lexer.Identifier, "Expected identifier after '.'")
+		if err != nil {
+			return nil, err
+		}
+		obj = &ast.MemberExpr{Object: obj, Property: &ast.Identifier{Symbol: prop.Value}}
+	}
+	return obj, nil
 }
 
 // parse literals and identifiers
@@ -392,6 +410,23 @@ func (p *Parser) parsePrimary() (ast.Expr, *runtime.Error) {
 	default:
 		return nil, runtime.NewError(fmt.Sprintf("Unexpected token: %s", tok.Value), tok.Line, tok.Column)
 	}
+}
+
+func (p *Parser) parseImportStatement() (ast.Stmt, *runtime.Error) {
+	p.consume() // 'import'
+	strTok, err := p.expect(lexer.String, "Expected string path after 'import'")
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.expect(lexer.As, "Expected 'as' after import path")
+	if err != nil {
+		return nil, err
+	}
+	aliasTok, err := p.expect(lexer.Identifier, "Expected identifier alias after 'as'")
+	if err != nil {
+		return nil, err
+	}
+	return &ast.ImportStatement{Path: strTok.Value, Alias: aliasTok.Value}, nil
 }
 
 func (p *Parser) parseArrayLiteral() (ast.Expr, *runtime.Error) {

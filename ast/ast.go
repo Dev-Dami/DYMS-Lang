@@ -24,7 +24,9 @@ const (
 		BooleanLiteralNode NodeType = "BooleanLiteral"
 		ArrayLiteralNode   NodeType = "ArrayLiteral"
 		MapLiteralNode     NodeType = "MapLiteral"
-	)
+		MemberExprNode     NodeType = "MemberExpr"
+		ImportStatementNode NodeType = "ImportStatement"
+)
 //stat interface
 
 type Stmt interface {
@@ -102,6 +104,16 @@ type CallExpr struct {
 	Args   []Expr
 }
 
+// Member Expression (object.property)
+
+type MemberExpr struct {
+	Object   Expr
+	Property *Identifier
+}
+
+func (m *MemberExpr) Kind() NodeType { return MemberExprNode }
+func (m *MemberExpr) exprNode()      {}
+
 func (c *CallExpr) Kind() NodeType { return CallExprNode }
 func (c *CallExpr) exprNode()      {}
 
@@ -167,11 +179,20 @@ type ArrayLiteral struct {
 
 func (a *ArrayLiteral) Kind() NodeType { return ArrayLiteralNode }
 func (a *ArrayLiteral) exprNode()      {}
-
 // Map Literal
+
 type MapLiteral struct {
 	Properties []*Property
 }
+
+// Import Statement: import "time" as t
+
+type ImportStatement struct {
+	Path  string
+	Alias string
+}
+
+func (is *ImportStatement) Kind() NodeType { return ImportStatementNode }
 
 func (m *MapLiteral) Kind() NodeType { return MapLiteralNode }
 func (m *MapLiteral) exprNode()      {}
@@ -259,6 +280,10 @@ func PrettyPrint(e Stmt) string {
 		out.WriteString(strings.Join(args, ", "))
 		out.WriteString(")")
 		return out.String()
+	case *MemberExpr:
+		return fmt.Sprintf("%s.%s", PrettyPrint(node.Object), node.Property.Symbol)
+	case *ImportStatement:
+		return fmt.Sprintf("import \"%s\" as %s", node.Path, node.Alias)
 	case *AssignmentExpr:
 		var out bytes.Buffer
 		out.WriteString(PrettyPrint(node.Assignee))

@@ -3,7 +3,7 @@
 **DYMS** is a lightweight, embeddable interpreter for a small dynamically-typed language, written in Go.
 It is designed to be simple, extensible, and easy to integrate.
 
-**Status:** Demo 0.2 • **License:** [MIT](./LICENSE) • **Requires:** Go ≥ 1.24
+**Status:** Demo 0.3 • **License:** [MIT](./LICENSE) • **Requires:** Go ≥ 1.24
 
 ---
 
@@ -26,6 +26,7 @@ It is designed to be simple, extensible, and easy to integrate.
 
 - **Variables**: `let`, `var`, `const`
 - **Types**: Number, String, Boolean, Array, Map
+- **Libraries**: Time
 - **Operators**:
   - Arithmetic: `+`, `-`, `*`, `/`
   - Comparison: `==`, `!=`, `<`, `<=`, `>`, `>=`
@@ -93,6 +94,20 @@ let m = {"name": "DYMS", "stable": ok}
 if (x > 5) { println("x > 5") } else { println("x <= 5") }
 
 for range(i, 3) { println(i) }
+```
+
+```libraries
+// time_demo.hg
+// Demonstrates import aliasing and time.now()
+
+import "time" as t
+
+let t0 = t.now()
+for range(i, 1000000) {
+}
+let t1 = t.now()
+
+println("Elapsed sec = " + (t1 - t0))
 ```
 
 ---
