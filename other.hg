@@ -1,0 +1,4 @@
+println("Hello from other.hg!")
+let a = 100
+let b = 200
+println(a + b)

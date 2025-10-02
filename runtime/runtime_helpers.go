@@ -35,7 +35,7 @@ func EvalIdentifier(ident *ast.Identifier, env *Environment) interface{} {
 func EvalProgram(program *ast.Program, env *Environment) interface{} {
 	var last interface{}
 	for _, stmt := range program.Body {
-		last, _ = Evaluate(stmt)
+		last, _ = Evaluate(stmt, env)
 	}
 	return last
 }

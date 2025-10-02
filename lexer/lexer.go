@@ -18,12 +18,21 @@ const (
 	Let
 	Var
 	Const
+	If
+	Else
+	For
+	While
+	ForRange
 
 	// Grouping * Operators
 	BinaryOperator
 	Equals
+	ComparisonOperator
+	LogicalOperator
 	OpenParen
 	CloseParen
+	OpenBrace
+	CloseBrace
 	Comma
 )
 
@@ -40,14 +49,32 @@ func (t TokenType) String() string {
 		return "Var"
 	case Const:
 		return "Const"
+	case If:
+		return "If"
+	case Else:
+		return "Else"
+	case For:
+		return "For"
+	case While:
+		return "While"
+	case ForRange:
+		return "ForRange"
 	case BinaryOperator:
 		return "BinaryOperator"
 	case Equals:
 		return "Equals"
+	case ComparisonOperator:
+		return "ComparisonOperator"
+	case LogicalOperator:
+		return "LogicalOperator"
 	case OpenParen:
 		return "OpenParen"
 	case CloseParen:
 		return "CloseParen"
+	case OpenBrace:
+		return "OpenBrace"
+	case CloseBrace:
+		return "CloseBrace"
 	case Comma:
 		return "Comma"
 	default:
@@ -55,22 +82,28 @@ func (t TokenType) String() string {
 	}
 }
 
-
 type Token struct {
-	Value string
-	Type  TokenType
+	Value  string
+	Type   TokenType
+	Line   int
+	Column int
 }
 
 // create new token
-func token(value string, t TokenType) Token {
-	return Token{Value: value, Type: t}
+func token(value string, t TokenType, line, column int) Token {
+	return Token{Value: value, Type: t, Line: line, Column: column}
 }
 
 // keyword lookup
 var keywords = map[string]TokenType{
-	"let": Let,
-	"var": Var,
-	"const": Const,
+	"let":       Let,
+	"var":       Var,
+	"const":     Const,
+	"if":        If,
+	"else":      Else,
+	"for":       For,
+	"while":     While,
+	"for range": ForRange,
 }
 
 func isAlpha(ch rune) bool {
@@ -78,7 +111,7 @@ func isAlpha(ch rune) bool {
 }
 
 func isSkippable(ch rune) bool {
-	return ch == ' ' || ch == '\n' || ch == '\t'
+	return ch == ' ' || ch == '' || ch == '\n' || ch == '\t'
 }
 
 func isInt(ch rune) bool {
@@ -89,6 +122,8 @@ func isInt(ch rune) bool {
 func Tokenize(sourceCode string) []Token {
 	var tokens []Token
 	src := []rune(sourceCode)
+	line := 1
+	col := 1
 
 	for len(src) > 0 {
 		ch := src[0]
@@ -96,53 +131,148 @@ func Tokenize(sourceCode string) []Token {
 		// Single-char tokens
 		if ch == '"' {
 			src = src[1:] // consume "
+			col++
 			str := ""
 			for len(src) > 0 && src[0] != '"' {
 				str += string(src[0])
 				src = src[1:]
+				col++
 			}
 			src = src[1:] // consume "
-			tokens = append(tokens, token(str, String))
+			col++
+			tokens = append(tokens, token(str, String, line, col-len(str)-2))
 		} else if ch == '(' {
-			tokens = append(tokens, token(string(ch), OpenParen))
+			tokens = append(tokens, token(string(ch), OpenParen, line, col))
 			src = src[1:]
+			col++
 		} else if ch == ')' {
-			tokens = append(tokens, token(string(ch), CloseParen))
+			tokens = append(tokens, token(string(ch), CloseParen, line, col))
 			src = src[1:]
+			col++
+		} else if ch == '{' {
+			tokens = append(tokens, token(string(ch), OpenBrace, line, col))
+			src = src[1:]
+			col++
+		} else if ch == '}' {
+			tokens = append(tokens, token(string(ch), CloseBrace, line, col))
+			src = src[1:]
+			col++
 		} else if ch == ',' {
-			tokens = append(tokens, token(string(ch), Comma))
+			tokens = append(tokens, token(string(ch), Comma, line, col))
 			src = src[1:]
+			col++
 		} else if ch == '+' || ch == '-' || ch == '*' || ch == '/' {
-			tokens = append(tokens, token(string(ch), BinaryOperator))
-			src = src[1:]
+			if ch == '/' && len(src) > 1 && src[1] == '/' {
+				// Skip comment
+				for len(src) > 0 && src[0] != '\n' {
+					src = src[1:]
+					col++
+				}
+			} else {
+				tokens = append(tokens, token(string(ch), BinaryOperator, line, col))
+				src = src[1:]
+				col++
+			}
 		} else if ch == '=' {
-			tokens = append(tokens, token(string(ch), Equals))
-			src = src[1:]
+			if len(src) > 1 && src[1] == '=' {
+				tokens = append(tokens, token("==", ComparisonOperator, line, col))
+				src = src[2:]
+				col += 2
+			} else {
+				tokens = append(tokens, token(string(ch), Equals, line, col))
+				src = src[1:]
+				col++
+			}
+		} else if ch == '!' {
+			if len(src) > 1 && src[1] == '=' {
+				tokens = append(tokens, token("!=", ComparisonOperator, line, col))
+				src = src[2:]
+				col += 2
+			}
+		} else if ch == '<' {
+			if len(src) > 1 && src[1] == '=' {
+				tokens = append(tokens, token("<=", ComparisonOperator, line, col))
+				src = src[2:]
+				col += 2
+			} else {
+				tokens = append(tokens, token("<", ComparisonOperator, line, col))
+				src = src[1:]
+				col++
+			}
+		} else if ch == '>' {
+			if len(src) > 1 && src[1] == '=' {
+				tokens = append(tokens, token(">=", ComparisonOperator, line, col))
+				src = src[2:]
+				col += 2
+			} else {
+				tokens = append(tokens, token(">", ComparisonOperator, line, col))
+				src = src[1:]
+				col++
+			}
+		} else if ch == '&' {
+			if len(src) > 1 && src[1] == '&' {
+				tokens = append(tokens, token("&&", LogicalOperator, line, col))
+				src = src[2:]
+				col += 2
+			}
+		} else if ch == '|' {
+			if len(src) > 1 && src[1] == '|' {
+				tokens = append(tokens, token("||", LogicalOperator, line, col))
+				src = src[2:]
+				col += 2
+			}
 		} else {
 			// Multi-character tokens
 			if isInt(ch) {
+				startCol := col
 				num := ""
 				for len(src) > 0 && isInt(src[0]) {
 					num += string(src[0])
 					src = src[1:]
+					col++
 				}
-				tokens = append(tokens, token(num, Number))
+				tokens = append(tokens, token(num, Number, line, startCol))
 			} else if isAlpha(ch) {
+				startCol := col
 				ident := ""
-				for len(src) > 0 && isAlpha(src[0]) {
+				for len(src) > 0 && (isAlpha(src[0]) || isInt(src[0])) {
 					ident += string(src[0])
 					src = src[1:]
+					col++
+				}
+
+				if ident == "for" && len(src) > 0 && src[0] == ' ' {
+					tempSrc := src[1:]
+					tempCol := col + 1
+					nextIdent := ""
+					for len(tempSrc) > 0 && (isAlpha(tempSrc[0]) || isInt(tempSrc[0])) {
+						nextIdent += string(tempSrc[0])
+						tempSrc = tempSrc[1:]
+						tempCol++
+					}
+					if nextIdent == "range" {
+						tokens = append(tokens, token("for range", ForRange, line, startCol))
+						src = tempSrc
+						col = tempCol
+						continue
+					}
 				}
 
 				if t, ok := keywords[ident]; ok {
-					tokens = append(tokens, token(ident, t))
+					tokens = append(tokens, token(ident, t, line, startCol))
 				} else {
-					tokens = append(tokens, token(ident, Identifier))
+					tokens = append(tokens, token(ident, Identifier, line, startCol))
 				}
 			} else if isSkippable(ch) {
+				if ch == '\n' {
+					line++
+					col = 1
+				} else {
+					col++
+				}
 				src = src[1:] // skip whitespace
 			} else {
-				fmt.Fprintf(os.Stderr, "Unrecognized character: %d (%q)\n", ch, ch)
+				fmt.Fprintf(os.Stderr, "Unrecognized character: %d (%q) at line %d, column %d\n", ch, ch, line, col)
 				os.Exit(1)
 			}
 		}

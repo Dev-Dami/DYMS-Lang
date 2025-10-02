@@ -1,37 +1,39 @@
 package main
 
 import (
-    "fmt"
-    "holygo/runtime"
-    "holygo/lexer"
-    "holygo/parser"
-    "io/ioutil"
-    "os"
+	"fmt"
+	"holygo/lexer"
+	"holygo/parser"
+	"holygo/runtime"
+	"io/ioutil"
+	"os"
 )
 
 func main() {
-    var filename string
-    if len(os.Args) > 1 {
-        filename = os.Args[1]
-    } else {
-        filename = "test.hg"
-    }
+	if len(os.Args) < 2 {
+		fmt.Println("Usage: holygo <filename>")
+		os.Exit(1)
+	}
 
-    code, err := ioutil.ReadFile(filename)
-    if err != nil {
-        panic(err)
-    }
-    tokens := lexer.Tokenize(string(code))
+	filename := os.Args[1]
+	sourceCode, err := ioutil.ReadFile(filename)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error reading file: %s\n", err)
+		os.Exit(1)
+	}
 
-    parser := parser.New(tokens)
-    astNode := parser.ParseProgram()
+	tokens := lexer.Tokenize(string(sourceCode))
+	parser := parser.New(tokens)
+	program := parser.ParseProgram()
 
-    result, err := runtime.Evaluate(astNode)
-    if err != nil {
-        panic(err)
-    }
+	// Create a new environment for the program
+	env := runtime.GlobalEnv
 
-    if result != nil {
-        fmt.Println("Result:", result)
-    }
+	_, err = runtime.Evaluate(program, env)
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+		os.Exit(1)
+	}
 }
+
+

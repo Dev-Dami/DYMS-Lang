@@ -4,6 +4,25 @@ const z = 30
 
 systemout(x + y + z)
 println("Hello from println")
-printf("x = %d, y = %d, z = %d\n", x, y, z)
+printf("x = %d, y = %d, z = %d", x, y, z)
 logln("This is a log message")
 logln(x + 2)
+
+// Conditionals
+if (x > 5) {
+    println("x is greater than 5")
+} else {
+    println("x is not greater than 5")
+}
+
+// While loop
+let i = 0
+while (i < 5) {
+    println(i)
+    i = i + 1
+}
+
+// For loop
+for range(j, 10) {
+    println(j)
+}
