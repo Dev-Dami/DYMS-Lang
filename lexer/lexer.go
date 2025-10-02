@@ -23,6 +23,8 @@ const (
 	For
 	While
 	ForRange
+	True
+	False
 
 	// Grouping * Operators
 	BinaryOperator
@@ -33,6 +35,9 @@ const (
 	CloseParen
 	OpenBrace
 	CloseBrace
+	OpenBracket
+	CloseBracket
+	Colon
 	Comma
 )
 
@@ -43,6 +48,8 @@ func (t TokenType) String() string {
 		return "Number"
 	case Identifier:
 		return "Identifier"
+	case String:
+		return "String"
 	case Let:
 		return "Let"
 	case Var:
@@ -59,6 +66,10 @@ func (t TokenType) String() string {
 		return "While"
 	case ForRange:
 		return "ForRange"
+	case True:
+		return "True"
+	case False:
+		return "False"
 	case BinaryOperator:
 		return "BinaryOperator"
 	case Equals:
@@ -75,6 +86,12 @@ func (t TokenType) String() string {
 		return "OpenBrace"
 	case CloseBrace:
 		return "CloseBrace"
+	case OpenBracket:
+		return "OpenBracket"
+	case CloseBracket:
+		return "CloseBracket"
+	case Colon:
+		return "Colon"
 	case Comma:
 		return "Comma"
 	default:
@@ -104,6 +121,8 @@ var keywords = map[string]TokenType{
 	"for":       For,
 	"while":     While,
 	"for range": ForRange,
+	"true":      True,
+	"false":     False,
 }
 
 func isAlpha(ch rune) bool {
@@ -111,7 +130,8 @@ func isAlpha(ch rune) bool {
 }
 
 func isSkippable(ch rune) bool {
-	return ch == ' ' || ch == '' || ch == '\n' || ch == '\t'
+	// Treat Windows CR (\r) as skippable to support CRLF line endings
+	return ch == ' ' || ch == '\n' || ch == '\t' || ch == '\r'
 }
 
 func isInt(ch rune) bool {
@@ -155,6 +175,18 @@ func Tokenize(sourceCode string) []Token {
 			col++
 		} else if ch == '}' {
 			tokens = append(tokens, token(string(ch), CloseBrace, line, col))
+			src = src[1:]
+			col++
+		} else if ch == '[' {
+			tokens = append(tokens, token(string(ch), OpenBracket, line, col))
+			src = src[1:]
+			col++
+		} else if ch == ']' {
+			tokens = append(tokens, token(string(ch), CloseBracket, line, col))
+			src = src[1:]
+			col++
+		} else if ch == ':' {
+			tokens = append(tokens, token(string(ch), Colon, line, col))
 			src = src[1:]
 			col++
 		} else if ch == ',' {

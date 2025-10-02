@@ -1,3 +1,62 @@
 package runtime
 
-type RuntimeVal interface{} 
+import "fmt"
+
+type ValueType string
+
+const (
+	NumberType  ValueType = "Number"
+	StringType  ValueType = "String"
+	BooleanType ValueType = "Boolean"
+	ArrayType   ValueType = "Array"
+	MapType     ValueType = "Map"
+	NullType    ValueType = "Null"
+)
+
+type RuntimeVal interface {
+	Type() ValueType
+	String() string
+}
+
+type NumberVal struct {
+	Value float64
+}
+
+func (n *NumberVal) Type() ValueType { return NumberType }
+func (n *NumberVal) String() string  { return fmt.Sprintf("%v", n.Value) }
+
+type StringVal struct {
+	Value string
+}
+
+func (s *StringVal) Type() ValueType { return StringType }
+func (s *StringVal) String() string  { return s.Value }
+
+type BooleanVal struct {
+	Value bool
+}
+
+func (b *BooleanVal) Type() ValueType { return BooleanType }
+func (b *BooleanVal) String() string  { return fmt.Sprintf("%v", b.Value) }
+
+
+type ArrayVal struct {
+	Elements []RuntimeVal
+}
+
+func (a *ArrayVal) Type() ValueType { return ArrayType }
+func (a *ArrayVal) String() string  { return "[...Array]" }
+
+type MapVal struct {
+	Properties map[string]RuntimeVal
+}
+
+func (m *MapVal) Type() ValueType { return MapType }
+func (m *MapVal) String() string  { return "{...Map}" }
+
+type NullVal struct {
+	Value interface{}
+}
+
+func (n *NullVal) Type() ValueType { return NullType }
+func (n *NullVal) String() string  { return "null" }

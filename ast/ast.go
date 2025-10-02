@@ -19,10 +19,12 @@ const (
 	IfStatementNode    NodeType = "IfStatement"
 	ForStatementNode   NodeType = "ForStatement"
 	WhileStatementNode NodeType = "WhileStatement"
-	BlockStatementNode NodeType = "BlockStatement"
-	AssignmentExprNode NodeType = "AssignmentExpr"
-)
-
+		BlockStatementNode NodeType = "BlockStatement"
+	 	AssignmentExprNode NodeType = "AssignmentExpr"
+		BooleanLiteralNode NodeType = "BooleanLiteral"
+		ArrayLiteralNode   NodeType = "ArrayLiteral"
+		MapLiteralNode     NodeType = "MapLiteral"
+	)
 //stat interface
 
 type Stmt interface {
@@ -150,6 +152,37 @@ type AssignmentExpr struct {
 func (a *AssignmentExpr) Kind() NodeType { return AssignmentExprNode }
 func (a *AssignmentExpr) exprNode()      {}
 
+// Boolean Literal
+type BooleanLiteral struct {
+	Value bool
+}
+
+func (b *BooleanLiteral) Kind() NodeType { return BooleanLiteralNode }
+func (b *BooleanLiteral) exprNode()      {}
+
+// Array Literal
+type ArrayLiteral struct {
+	Elements []Expr
+}
+
+func (a *ArrayLiteral) Kind() NodeType { return ArrayLiteralNode }
+func (a *ArrayLiteral) exprNode()      {}
+
+// Map Literal
+type MapLiteral struct {
+	Properties []*Property
+}
+
+func (m *MapLiteral) Kind() NodeType { return MapLiteralNode }
+func (m *MapLiteral) exprNode()      {}
+
+// Property
+type Property struct {
+	Key   Expr
+	Value Expr
+}
+
+
 func PrettyPrint(e Stmt) string {
 	switch node := e.(type) {
 	case *NumericLiteral:
@@ -231,6 +264,28 @@ func PrettyPrint(e Stmt) string {
 		out.WriteString(PrettyPrint(node.Assignee))
 		out.WriteString(" = ")
 		out.WriteString(PrettyPrint(node.Value))
+		return out.String()
+	case *BooleanLiteral:
+		return fmt.Sprintf("%v", node.Value)
+	case *ArrayLiteral:
+		var out bytes.Buffer
+		var elements []string
+		for _, el := range node.Elements {
+			elements = append(elements, PrettyPrint(el))
+		}
+		out.WriteString("[")
+		out.WriteString(strings.Join(elements, ", "))
+		out.WriteString("]")
+		return out.String()
+	case *MapLiteral:
+		var out bytes.Buffer
+		var properties []string
+		for _, prop := range node.Properties {
+			properties = append(properties, fmt.Sprintf("%s: %s", PrettyPrint(prop.Key), PrettyPrint(prop.Value)))
+		}
+		out.WriteString("{")
+		out.WriteString(strings.Join(properties, ", "))
+		out.WriteString("}")
 		return out.String()
 	default:
 		return fmt.Sprintf("Unknown statement type: %T", e)

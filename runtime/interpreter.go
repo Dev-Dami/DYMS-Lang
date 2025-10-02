@@ -7,78 +7,102 @@ import (
 )
 
 // Function represents a function in the language.
-type Function func(args ...RuntimeVal) RuntimeVal
+type Function func(args ...RuntimeVal) (RuntimeVal, *Error)
+
+func (f Function) Type() ValueType { return "Function" }
+func (f Function) String() string  { return "[function]" }
 
 var GlobalEnv = NewEnvironment(nil)
 
 func init() {
 	log.SetFlags(0)
-	GlobalEnv.DeclareVar("systemout", Function(func(args ...RuntimeVal) RuntimeVal {
+	GlobalEnv.DeclareVar("systemout", Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
 		for _, arg := range args {
-			log.Println(arg)
+			log.Println(Pretty(arg))
 		}
-		return nil
+		return nil, nil
 	}), true)
-	GlobalEnv.DeclareVar("println", Function(func(args ...RuntimeVal) RuntimeVal {
+GlobalEnv.DeclareVar("println", Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
 		for _, arg := range args {
-			fmt.Printf("[println]: %s\n", formatValue(arg))
+			if s, ok := arg.(*StringVal); ok {
+				fmt.Printf("[println]: %s\n", Unescape(s.Value))
+			} else {
+				fmt.Printf("[println]: %s\n", formatValue(arg))
+			}
 		}
-		return nil
+		return nil, nil
 	}), true)
-	GlobalEnv.DeclareVar("printf", Function(func(args ...RuntimeVal) RuntimeVal {
+	GlobalEnv.DeclareVar("printf", Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
 		if len(args) > 0 {
-			format, ok := args[0].(string)
+			format, ok := args[0].(*StringVal)
 			if ok {
 				var values []interface{}
 				for _, arg := range args[1:] {
-					if f, isFloat := arg.(float64); isFloat {
-						values = append(values, int(f))
+					if f, isFloat := arg.(*NumberVal); isFloat {
+						values = append(values, int(f.Value))
+					} else if s, isStr := arg.(*StringVal); isStr {
+						// Pass raw string content to respect formatting and newlines
+						values = append(values, s.Value)
 					} else {
-						values = append(values, arg)
+						values = append(values, Pretty(arg))
 					}
 				}
-				fmt.Printf(format, values...)
+// Interpret basic escapes in the format string
+				fmtStr := Unescape(format.Value)
+				fmt.Printf(fmtStr, values...)
 			} else {
 				fmt.Println("First argument to printf must be a string")
 			}
 		}
-		return nil
+		return nil, nil
 	}), true)
-	GlobalEnv.DeclareVar("logln", Function(func(args ...RuntimeVal) RuntimeVal {
+	GlobalEnv.DeclareVar("logln", Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
 		for _, arg := range args {
 			log.Print("[logln]: ", formatValue(arg), " \n")
 		}
-		return nil
+		return nil, nil
+	}), true)
+
+	// pretty(value): returns single-line pretty string
+	GlobalEnv.DeclareVar("pretty", Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 1 {
+			return &StringVal{Value: ""}, nil
+		}
+		return &StringVal{Value: Pretty(args[0])}, nil
+	}), true)
+
+	// prettyml(value): returns multi-line pretty string
+	GlobalEnv.DeclareVar("prettyml", Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 1 {
+			return &StringVal{Value: ""}, nil
+		}
+		return &StringVal{Value: PrettyMultiline(args[0])}, nil
+	}), true)
+
+	// printlnml(value): print multi-line pretty string with trailing newline
+	GlobalEnv.DeclareVar("printlnml", Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 1 {
+			fmt.Println()
+			return nil, nil
+		}
+		fmt.Println(PrettyMultiline(args[0]))
+		return nil, nil
 	}), true)
 }
 
-func formatValue(v RuntimeVal) string {
-	if v == nil {
-		return "null"
-	}
-	switch val := v.(type) {
-	case float64:
-		if val == float64(int64(val)) {
-			return fmt.Sprintf("%d", int64(val))
-		}
-		return fmt.Sprintf("%f", val)
-	case bool:
-		return fmt.Sprintf("%t", val)
-	case string:
-		return val
-	case Function:
-		return "[function]"
-	default:
-		return fmt.Sprintf("%v", v)
-	}
-}
 // Evaluator
-func Evaluate(stmt ast.Stmt, scope *Environment) (RuntimeVal, error) {
+func Evaluate(stmt ast.Stmt, scope *Environment) (RuntimeVal, *Error) {
 	switch s := stmt.(type) {
 	case *ast.NumericLiteral:
-		return s.Value, nil
+		return &NumberVal{Value: s.Value}, nil
 	case *ast.StringLiteral:
-		return s.Value, nil
+		return &StringVal{Value: s.Value}, nil
+	case *ast.BooleanLiteral:
+		return &BooleanVal{Value: s.Value}, nil
+	case *ast.ArrayLiteral:
+		return evalArrayLiteral(s, scope)
+	case *ast.MapLiteral:
+		return evalMapLiteral(s, scope)
 	case *ast.BinaryExpr:
 		return evalBinaryExpr(s, scope)
 	case *ast.Program:
@@ -102,9 +126,10 @@ func Evaluate(stmt ast.Stmt, scope *Environment) (RuntimeVal, error) {
 			}
 		}
 		if f, ok := fn.(Function); ok {
-			return f(args...), nil
+			return f(args...)
 		} else {
-			return nil, fmt.Errorf("not a function: %T", fn)
+			// No positional info at runtime for this node; surface a clean error
+			return nil, NewError(fmt.Sprintf("not a function: %T", fn), 0, 0)
 		}
 	case *ast.Identifier:
 		return scope.LookupVar(s.Symbol), nil
@@ -119,11 +144,11 @@ func Evaluate(stmt ast.Stmt, scope *Environment) (RuntimeVal, error) {
 	case *ast.AssignmentExpr:
 		return evalAssignmentExpr(s, scope)
 	default:
-		return nil, fmt.Errorf("unknown statement type: %T", s)
+		return nil, NewError(fmt.Sprintf("unknown statement type: %T", s), 0, 0)
 	}
 }
 
-func evalAssignmentExpr(node *ast.AssignmentExpr, scope *Environment) (RuntimeVal, error) {
+func evalAssignmentExpr(node *ast.AssignmentExpr, scope *Environment) (RuntimeVal, *Error) {
 	if ident, ok := node.Assignee.(*ast.Identifier); ok {
 		value, err := Evaluate(node.Value, scope)
 		if err != nil {
@@ -131,12 +156,12 @@ func evalAssignmentExpr(node *ast.AssignmentExpr, scope *Environment) (RuntimeVa
 		}
 		return scope.AssignVar(ident.Symbol, value), nil
 	}
-	return nil, fmt.Errorf("invalid assignment target: %T", node.Assignee)
+	return nil, NewError(fmt.Sprintf("invalid assignment target: %T", node.Assignee), 0, 0)
 }
 
-func evalProgram(program *ast.Program, scope *Environment) (RuntimeVal, error) {
+func evalProgram(program *ast.Program, scope *Environment) (RuntimeVal, *Error) {
 	var lastResult RuntimeVal
-	var err error
+	var err *Error
 	for _, stmt := range program.Body {
 		lastResult, err = Evaluate(stmt, scope)
 		if err != nil {
@@ -146,10 +171,10 @@ func evalProgram(program *ast.Program, scope *Environment) (RuntimeVal, error) {
 	return lastResult, nil
 }
 
-func evalBlockStatement(block *ast.BlockStatement, scope *Environment) (RuntimeVal, error) {
+func evalBlockStatement(block *ast.BlockStatement, scope *Environment) (RuntimeVal, *Error) {
 	blockScope := NewEnvironment(scope)
 	var lastResult RuntimeVal
-	var err error
+	var err *Error
 	for _, stmt := range block.Statements {
 		lastResult, err = Evaluate(stmt, blockScope)
 		if err != nil {
@@ -159,7 +184,7 @@ func evalBlockStatement(block *ast.BlockStatement, scope *Environment) (RuntimeV
 	return lastResult, nil
 }
 
-func evalIfStatement(stmt *ast.IfStatement, scope *Environment) (RuntimeVal, error) {
+func evalIfStatement(stmt *ast.IfStatement, scope *Environment) (RuntimeVal, *Error) {
 	condition, err := Evaluate(stmt.Condition, scope)
 	if err != nil {
 		return nil, err
@@ -174,30 +199,30 @@ func evalIfStatement(stmt *ast.IfStatement, scope *Environment) (RuntimeVal, err
 	return nil, nil
 }
 
-func evalForStatement(stmt *ast.ForStatement, scope *Environment) (RuntimeVal, error) {
+func evalForStatement(stmt *ast.ForStatement, scope *Environment) (RuntimeVal, *Error) {
 	rangeVal, err := Evaluate(stmt.Range, scope)
 	if err != nil {
 		return nil, err
 	}
 
-	if rng, ok := rangeVal.(float64); ok {
+	if rng, ok := rangeVal.(*NumberVal); ok {
 		forScope := NewEnvironment(scope)
-		forScope.DeclareVar(stmt.Identifier.Symbol, float64(0), false)
-		for i := 0; i < int(rng); i++ {
-			forScope.AssignVar(stmt.Identifier.Symbol, float64(i))
+		forScope.DeclareVar(stmt.Identifier.Symbol, &NumberVal{Value: 0}, false)
+		for i := 0; i < int(rng.Value); i++ {
+			forScope.AssignVar(stmt.Identifier.Symbol, &NumberVal{Value: float64(i)})
 			_, err := evalBlockStatement(stmt.Body, forScope)
 			if err != nil {
 				return nil, err
 			}
 		}
 	} else {
-		return nil, fmt.Errorf("for loop range must be a number")
+		return nil, NewError("for loop range must be a number", 0, 0)
 	}
 
 	return nil, nil
 }
 
-func evalWhileStatement(stmt *ast.WhileStatement, scope *Environment) (RuntimeVal, error) {
+func evalWhileStatement(stmt *ast.WhileStatement, scope *Environment) (RuntimeVal, *Error) {
 	for {
 		condition, err := Evaluate(stmt.Condition, scope)
 		if err != nil {
@@ -217,7 +242,40 @@ func evalWhileStatement(stmt *ast.WhileStatement, scope *Environment) (RuntimeVa
 	return nil, nil
 }
 
-func evalBinaryExpr(expr *ast.BinaryExpr, scope *Environment) (RuntimeVal, error) {
+func evalArrayLiteral(lit *ast.ArrayLiteral, scope *Environment) (RuntimeVal, *Error) {
+	elements := make([]RuntimeVal, len(lit.Elements))
+	for i, el := range lit.Elements {
+		evaled, err := Evaluate(el, scope)
+		if err != nil {
+			return nil, err
+		}
+		elements[i] = evaled
+	}
+	return &ArrayVal{Elements: elements}, nil
+}
+
+func evalMapLiteral(lit *ast.MapLiteral, scope *Environment) (RuntimeVal, *Error) {
+	properties := make(map[string]RuntimeVal)
+	for _, prop := range lit.Properties {
+		key, err := Evaluate(prop.Key, scope)
+		if err != nil {
+			return nil, err
+		}
+		strKey, ok := key.(*StringVal)
+		if !ok {
+			return nil, NewError(fmt.Sprintf("map key must be a string, got %T", key), 0, 0)
+		}
+
+		value, err := Evaluate(prop.Value, scope)
+		if err != nil {
+			return nil, err
+		}
+		properties[strKey.Value] = value
+	}
+	return &MapVal{Properties: properties}, nil
+}
+
+func evalBinaryExpr(expr *ast.BinaryExpr, scope *Environment) (RuntimeVal, *Error) {
 	leftVal, err := Evaluate(expr.Left, scope)
 	if err != nil {
 		return nil, err
@@ -228,63 +286,97 @@ func evalBinaryExpr(expr *ast.BinaryExpr, scope *Environment) (RuntimeVal, error
 	}
 
 	// Handle numeric operations
-	if leftFloat, okLeft := leftVal.(float64); okLeft {
-		if rightFloat, okRight := rightVal.(float64); okRight {
+	if leftNum, okLeft := leftVal.(*NumberVal); okLeft {
+		if rightNum, okRight := rightVal.(*NumberVal); okRight {
 			switch expr.Operator {
 			case "+":
-				return leftFloat + rightFloat, nil
+				return &NumberVal{Value: leftNum.Value + rightNum.Value}, nil
 			case "-":
-				return leftFloat - rightFloat, nil
+				return &NumberVal{Value: leftNum.Value - rightNum.Value}, nil
 			case "*":
-				return leftFloat * rightFloat, nil
+				return &NumberVal{Value: leftNum.Value * rightNum.Value}, nil
 			case "/":
-				if rightFloat == 0 {
-					return nil, fmt.Errorf("division by zero")
+				if rightNum.Value == 0 {
+					return nil, NewError("division by zero", 0, 0)
 				}
-				return leftFloat / rightFloat, nil
+				return &NumberVal{Value: leftNum.Value / rightNum.Value}, nil
 			case "==":
-				return leftFloat == rightFloat, nil
+				return &BooleanVal{Value: leftNum.Value == rightNum.Value}, nil
 			case "!=":
-				return leftFloat != rightFloat, nil
+				return &BooleanVal{Value: leftNum.Value != rightNum.Value}, nil
 			case "<":
-				return leftFloat < rightFloat, nil
+				return &BooleanVal{Value: leftNum.Value < rightNum.Value}, nil
 			case "<=":
-				return leftFloat <= rightFloat, nil
+				return &BooleanVal{Value: leftNum.Value <= rightNum.Value}, nil
 			case ">":
-				return leftFloat > rightFloat, nil
+				return &BooleanVal{Value: leftNum.Value > rightNum.Value}, nil
 			case ">=":
-				return leftFloat >= rightFloat, nil
+				return &BooleanVal{Value: leftNum.Value >= rightNum.Value}, nil
 			}
 		}
 	}
 
 	// Handle logical operations
-	if leftBool, okLeft := leftVal.(bool); okLeft {
-		if rightBool, okRight := rightVal.(bool); okRight {
+	if leftBool, okLeft := leftVal.(*BooleanVal); okLeft {
+		if rightBool, okRight := rightVal.(*BooleanVal); okRight {
 			switch expr.Operator {
 			case "&&":
-				return leftBool && rightBool, nil
+				return &BooleanVal{Value: leftBool.Value && rightBool.Value}, nil
 			case "||":
-				return leftBool || rightBool, nil
+				return &BooleanVal{Value: leftBool.Value || rightBool.Value}, nil
 			}
 		}
 	}
 
-	return nil, fmt.Errorf("unknown operator %s for types %T and %T", expr.Operator, leftVal, rightVal)
+	// Handle string operations
+	if leftStr, okLeft := leftVal.(*StringVal); okLeft {
+		// If right is string and operator is + or comparison
+		switch r := rightVal.(type) {
+		case *StringVal:
+			switch expr.Operator {
+			case "+":
+				return &StringVal{Value: leftStr.Value + r.Value}, nil
+			case "==":
+				return &BooleanVal{Value: leftStr.Value == r.Value}, nil
+			case "!=":
+				return &BooleanVal{Value: leftStr.Value != r.Value}, nil
+			default:
+				return nil, NewError(fmt.Sprintf("unknown operator %s for string operands", expr.Operator), 0, 0)
+			}
+		default:
+			if expr.Operator == "+" {
+				return &StringVal{Value: leftStr.Value + rightVal.String()}, nil
+			}
+		}
+	}
+
+	// Handle boolean equality
+	if leftBool, okLeft := leftVal.(*BooleanVal); okLeft {
+		if rightBool, okRight := rightVal.(*BooleanVal); okRight {
+			switch expr.Operator {
+			case "==":
+				return &BooleanVal{Value: leftBool.Value == rightBool.Value}, nil
+			case "!=":
+				return &BooleanVal{Value: leftBool.Value != rightBool.Value}, nil
+			}
+		}
+	}
+
+	return nil, NewError(fmt.Sprintf("unknown operator %s for types %s and %s", expr.Operator, leftVal.Type(), rightVal.Type()), 0, 0)
 }
 
 func isTruthy(val RuntimeVal) bool {
 	if val == nil {
 		return false
 	}
-	if b, ok := val.(bool); ok {
-		return b
+	if b, ok := val.(*BooleanVal); ok {
+		return b.Value
 	}
-	if n, ok := val.(float64); ok {
-		return n != 0
+	if n, ok := val.(*NumberVal); ok {
+		return n.Value != 0
 	}
-	if s, ok := val.(string); ok {
-		return s != ""
+	if s, ok := val.(*StringVal); ok {
+		return s.Value != ""
 	}
 	return true
 }

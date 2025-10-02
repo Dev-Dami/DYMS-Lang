@@ -1,76 +1,167 @@
 # DYMS — Dynamic Yet Minimal System Interpreter
 
-DYMS is a lightweight, embeddable interpreter for a simple, dynamically-typed scripting language. It is written in Go and is designed to be easily integrated into other Go applications.
+**DYMS** is a lightweight, embeddable interpreter for a small dynamically-typed language, written in Go.
+It is designed to be simple, extensible, and easy to integrate.
 
-## Version
+**Status:** Demo 0.2 • **License:** [MIT](./LICENSE) • **Requires:** Go ≥ 1.24
 
-update 0.1 demo
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Quick Start](#quick-start)
+- [Command-Line Usage](#command-line-usage)
+- [Language Overview](#language-overview)
+- [Architecture](#architecture)
+- [Project Structure](#project-structure)
+- [Pretty Printing](#pretty-printing)
+- [Demos](#demos)
+- [Roadmap](#roadmap)
+- [Further Reading & Inspiration](#further-reading--inspiration)
+
+---
 
 ## Features
 
-- **Dynamic Typing**: The language is dynamically typed, which means that you don't have to declare the type of a variable before you use it.
-- **Variables**: The language supports variable declarations using the `let`, `var`, and `const` keywords.
-- **Data Types**: Supports numbers (float64) and strings.
-- **Operators**: Basic arithmetic operators: `+`, `-`, `*`, `/`.
-- **Comments**: Supports single-line comments using `//`.
-- **Built-in Functions**:
-  - `systemout(...)`: Prints arguments to the console using the log package.
-  - `println(...)`: Prints arguments to the console.
-  - `printf(format, ...)`: Prints formatted strings.
-  - `logln(...)`: Prints arguments to the console using the log package.
-- **Control Flow**: support for `if/else` statements and `for` loops.
+- **Variables**: `let`, `var`, `const`
+- **Types**: Number, String, Boolean, Array, Map
+- **Operators**:
+  - Arithmetic: `+`, `-`, `*`, `/`
+  - Comparison: `==`, `!=`, `<`, `<=`, `>`, `>=`
+  - Logical: `&&`, `||`
+  - String concatenation with `+`
 
-## Architecture
+- **Control flow**:
+  - `if/else`
+  - `while`
+  - `for range(i, N)`
 
-The interpreter is divided into the following components:
+- **Comments**: Single-line with `//`
+- **Built-ins**:
+  - `println`, `systemout`, `logln`
+  - `printf(format, ...)` (supports `\n`, `\t`, `\r\n`)
+  - `pretty(v)` — single-line representation
+  - `prettyml(v)` — multi-line representation
+  - `printlnml(v)` — multi-line pretty print with line break
 
-- **Lexer**: The lexer is responsible for breaking the source code into a stream of tokens.
-- **Parser**: The parser takes the tokens from the lexer and builds an Abstract Syntax Tree (AST).
-- **Evaluator**: The evaluator traverses the AST and evaluates the code.
+- **Error reporting**: Includes line and column numbers when available
 
-## Getting Started
+---
 
-To get started with DYMS, you will need to have Go installed on your system. You can then run the interpreter by running the following command:
+## Quick Start
 
-```bash
+### Run a script
+
+```powershell
 go run . test.hg
 ```
 
-This will execute the code in the `test.hg` file.
+### Build and run as binary
 
-## Usage/Examples
-
-Here is an example of a HolyGo program:
-
-```go
-let x = 10
-var y = 20
-const z = 30
-
-// This is a comment
-systemout(x + y + z)
-println("Hello from println")
-printf("x = %d, y = %d, z = %d", x, y, z)
-logln("This is a log message")
-logln(x + 2)
+```powershell
+go build -o hg.exe .
+./hg.exe types_demo.hg
 ```
 
-## Recent Changes
+---
 
-- Added support for `//` comments.
-- Improved the output of the `println`, `printf`, and `logln` functions.
-- Fixed a bug in the `for` loop where the loop variable was being redeclared on each iteration.
-- Fixed a bug in the lexer where the division operator was not being handled correctly.
+## Command-Line Usage
 
-## Error Handling
+```text
+hg <filename>
+```
 
-The interpreter will report errors for various issues, including:
+**Example**:
 
-- **Syntax Errors**: Such as unrecognized characters or malformed statements.
-- **Runtime Errors**: Such as division by zero, or trying to use a variable that has not been declared.
+```powershell
+go run . other.hg
+```
+
+---
+
+## Language Overview
+
+```text
+let x = 10
+var y = 20
+const who = "DYMS"
+let ok = true
+let arr = [1, 2, 3]
+let m = {"name": "DYMS", "stable": ok}
+
+if (x > 5) { println("x > 5") } else { println("x <= 5") }
+
+for range(i, 3) { println(i) }
+```
+
+---
+
+## Architecture (High-Level)
+
+- **Lexer → Tokens**: [lexer/lexer.go](./lexer/lexer.go)
+- **Parser → AST**: [parser/parser.go](./parser/parser.go)
+- **Runtime / Evaluator → Execution**:
+  - Environments / scopes: [runtime/enviroment.go](./runtime/enviroment.go)
+  - Values: [runtime/value.go](./runtime/value.go)
+  - Interpreter & built-ins: [runtime/interpreter.go](./runtime/interpreter.go)
+  - Pretty printers: [runtime/outputingpritier.go](./runtime/outputingpritier.go)
+
+---
+
+## Project Structure
+
+- **Entry point**: [main.go](./main.go)
+- **Core language**: [lexer/](./lexer), [parser/](./parser), [ast/ast.go](./ast/ast.go)
+- **Runtime**: [runtime/](./runtime)
+- **Examples**: [test.hg](./test.hg), [other.hg](./other.hg), [types_demo.hg](./types_demo.hg)
+
+---
+
+## Pretty Printing
+
+- **`pretty(v)`** — inline, quoted strings; arrays and maps in single line
+- **`prettyml(v)`** — multi-line, indented; maps with sorted keys for stability
+- **`printlnml(v)`** — prints `prettyml` with trailing newline
+
+---
+
+## Demos
+
+The recommended demo showcases types, control flow, and pretty printing:
+
+```powershell
+go run . types_demo.hg
+```
+
+---
 
 ## Roadmap
 
-- **Add support for more data types**: Booleans, arrays, and maps.
-- **Improve the error handling**: Make error messages more user-friendly.
-- **Add a standard library**: Provide a set of useful functions for working with strings, numbers, and other data types.
+- Array and map indexing / field access
+- Small standard library (strings, collections)
+- Improved parser diagnostics and error recovery
+
+---
+
+## Further Reading & Inspiration
+
+DYMS draws inspiration from both academic and practical works on programming language design, interpreters, and compilers. If you want to explore similar topics, here are some recommended resources:
+
+- **Books**:
+  - [Crafting Interpreters](https://craftinginterpreters.com/) by Robert Nystrom — a modern and practical guide to writing interpreters.
+  - [Compilers: Principles, Techniques, and Tools (Dragon Book)](https://en.wikipedia.org/wiki/Compilers:_Principles,_Techniques,_and_Tools) by Aho, Lam, Sethi, and Ullman.
+  - [Programming Languages: Application and Interpretation (PLAI)](http://cs.brown.edu/~sk/Publications/Books/ProgLangs/) by Shriram Krishnamurthi.
+
+- **Projects / Languages**:
+  - [Lua](https://www.lua.org/) — a lightweight embeddable scripting language.
+  - [Wren](https://wren.io/) — a small, fast language by Robert Nystrom, focused on simplicity.
+  - [Go](https://go.dev/) itself — whose minimalism and clarity influenced DYMS.
+
+- **Other Resources**:
+  - [Structure and Interpretation of Computer Programs (SICP)](https://mitpress.mit.edu/9780262510875/structure-and-interpretation-of-computer-programs/) — a foundational text on programming languages and abstractions.
+  - [Awesome Compilers](https://github.com/aalhour/awesome-compilers) — a curated list of compilers, interpreters, and related resources.
+
+---
+
+© 2025 DYMS. Licensed under the [MIT License](./LICENSE).

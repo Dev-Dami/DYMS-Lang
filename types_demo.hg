@@ -1,0 +1,66 @@
+// types_demo.hg
+// Demonstrates booleans, arrays, maps, and related operators in DYMS
+
+printf("=== Type Demonstration ===\n\n")
+
+// Booleans
+let t = true
+let f = false
+printf("Booleans:\n")
+printf("t = %s\n", pretty(t))
+printf("f = %s\n", pretty(f))
+printf("t && true → %s\n", pretty(t && true))
+printf("f || true → %s\n", pretty(f || true))
+printf("t == f → %s\n", pretty(t == f))
+printf("t != f → %s\n\n", pretty(t != f))
+
+// Strings
+printf("Strings:\n")
+printf("    %s\n", pretty("hi there"))
+// The following are illustrative (no built-in startsWith/contains yet)
+printf("%s starts with %s? → true\n", pretty("hi"), pretty("h"))
+printf("%s contains %s? → true\n", pretty("there"), pretty("re"))
+printf("Concatenation: %s\n\n", pretty("num" + 123))
+
+// Arrays
+let arr1 = [1, 2, 3]
+let arr2 = [4, 5, 6]
+let arr3 = ["a", "b", "c"]
+printf("Arrays:\n")
+printf("arr1 = %s\n", pretty(arr1))
+printf("arr2 = %s\n", pretty(arr2))
+printf("arr3 = %s\n\n", pretty(arr3))
+
+// Maps (string keys only)
+let map1 = {"a": 1, "b": 2}
+let map2 = {"x": "foo", "y": "bar"}
+printf("Maps:\n")
+printf("map1 = %s\n", pretty(map1))
+printf("map2 = %s\n\n", pretty(map2))
+
+// Multiline pretty for nested structures
+let nested = {"meta": {"lang": "hg", "version": 1}, "list": [1, 2, [3, 4], {"x": true}], "ok": true}
+printf("Multiline (nested):\n%s\n\n", prettyml(nested))
+
+// Conditionals
+printf("Conditionals:\n")
+if (t && (1 < 2)) {
+    printf("if works\n\n")
+} else {
+    printf("if else failed\n\n")
+}
+
+// Loops
+printf("Loops:\n")
+printf("for i in [0..2]:\n")
+for range(i, 3) {
+    printf("%d\n", i)
+}
+printf("\n")
+
+let i = 0
+printf("while i < 3:\n")
+while (i < 3) {
+    printf("%d\n", i)
+    i = i + 1
+}

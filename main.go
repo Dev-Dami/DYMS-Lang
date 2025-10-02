@@ -16,22 +16,26 @@ func main() {
 	}
 
 	filename := os.Args[1]
-	sourceCode, err := ioutil.ReadFile(filename)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error reading file: %s\n", err)
+	sourceCode, readErr := ioutil.ReadFile(filename)
+	if readErr != nil {
+		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", readErr)
 		os.Exit(1)
 	}
 
 	tokens := lexer.Tokenize(string(sourceCode))
-	parser := parser.New(tokens)
-	program := parser.ParseProgram()
+	p := parser.New(tokens)
+	program, perr := p.ParseProgram()
+	if perr != nil {
+		fmt.Fprintln(os.Stderr, perr.Error())
+		os.Exit(1)
+	}
 
 	// Create a new environment for the program
 	env := runtime.GlobalEnv
 
-	_, err = runtime.Evaluate(program, env)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "Error: %s\n", err)
+	_, rerr := runtime.Evaluate(program, env)
+	if rerr != nil {
+		fmt.Fprintln(os.Stderr, rerr.Error())
 		os.Exit(1)
 	}
 }
