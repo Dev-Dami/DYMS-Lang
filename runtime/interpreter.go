@@ -218,6 +218,10 @@ func Evaluate(stmt ast.Stmt, scope *Environment) (RuntimeVal, *Error) {
 		return evalUnaryExpr(s, scope)
 	case *ast.TryStatement:
 		return evalTryStatement(s, scope)
+	case *ast.BreakStatement:
+		return &BreakVal{}, nil
+	case *ast.ContinueStatement:
+		return &ContinueVal{}, nil
 	default:
 		return nil, NewError(fmt.Sprintf("unknown statement type: %T", s), 0, 0)
 	}
@@ -320,6 +324,12 @@ func evalBlockStatement(block *ast.BlockStatement, scope *Environment) (RuntimeV
 		if _, isRet := lastResult.(*ReturnVal); isRet {
 			return lastResult, nil
 		}
+		if _, isBreak := lastResult.(*BreakVal); isBreak {
+			return lastResult, nil
+		}
+		if _, isContinue := lastResult.(*ContinueVal); isContinue {
+			return lastResult, nil
+		}
 	}
 	return lastResult, nil
 }
@@ -414,9 +424,18 @@ func evalForStatement(stmt *ast.ForStatement, scope *Environment) (RuntimeVal, *
 			counterVar.Value = float64(i)
 			iterScope.variables[stmt.Identifier.Symbol] = counterVar
 			
-			_, err := evalBlockStatement(stmt.Body, iterScope)
+			result, err := evalBlockStatement(stmt.Body, iterScope)
 			if err != nil {
 				return nil, err
+			}
+			if _, isBreak := result.(*BreakVal); isBreak {
+				break
+			}
+			if _, isContinue := result.(*ContinueVal); isContinue {
+				continue
+			}
+			if _, isReturn := result.(*ReturnVal); isReturn {
+				return result, nil
 			}
 		}
 	} else {
@@ -437,9 +456,18 @@ func evalWhileStatement(stmt *ast.WhileStatement, scope *Environment) (RuntimeVa
 			break
 		}
 
-		_, err = evalBlockStatement(stmt.Body, scope)
+		result, err := evalBlockStatement(stmt.Body, scope)
 		if err != nil {
 			return nil, err
+		}
+		if _, isBreak := result.(*BreakVal); isBreak {
+			break
+		}
+		if _, isContinue := result.(*ContinueVal); isContinue {
+			continue
+		}
+		if _, isReturn := result.(*ReturnVal); isReturn {
+			return result, nil
 		}
 	}
 

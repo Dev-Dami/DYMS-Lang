@@ -32,6 +32,8 @@ const (
 	UnaryExprNode          NodeType = "UnaryExpr"
 	TryStatementNode       NodeType = "TryStatement"
 	CatchStatementNode     NodeType = "CatchStatement"
+	BreakStatementNode     NodeType = "BreakStatement"
+	ContinueStatementNode  NodeType = "ContinueStatement"
 )
 
 type Stmt interface {
@@ -183,6 +185,14 @@ type TryStatement struct {
 }
 func (ts *TryStatement) Kind() NodeType { return TryStatementNode }
 
+// Break statement
+type BreakStatement struct{}
+func (bs *BreakStatement) Kind() NodeType { return BreakStatementNode }
+
+// Continue statement
+type ContinueStatement struct{}
+func (cs *ContinueStatement) Kind() NodeType { return ContinueStatementNode }
+
 type Property struct {
 	Key   Expr
 	Value Expr
@@ -324,6 +334,10 @@ case *MapLiteral:
 		out.WriteString(") ")
 		out.WriteString(PrettyPrint(node.CatchBlock))
 		result = out.String()
+	case *BreakStatement:
+		result = "break"
+	case *ContinueStatement:
+		result = "continue"
 	default:
 		result = fmt.Sprintf("Unknown statement type: %T", e)
 	}

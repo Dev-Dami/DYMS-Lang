@@ -13,6 +13,8 @@ const (
 	NullType     ValueType = "Null"
 	FunctionType ValueType = "Function"
 	ReturnType   ValueType = "Return"
+	BreakType    ValueType = "Break"
+	ContinueType ValueType = "Continue"
 )
 
 type RuntimeVal interface {
@@ -90,3 +92,15 @@ type ReturnVal struct {
 
 func (r *ReturnVal) Type() ValueType { return ReturnType }
 func (r *ReturnVal) String() string  { return r.Inner.String() }
+
+// Break for loop control
+type BreakVal struct{}
+
+func (b *BreakVal) Type() ValueType { return BreakType }
+func (b *BreakVal) String() string  { return "break" }
+
+// Continue for loop control
+type ContinueVal struct{}
+
+func (c *ContinueVal) Type() ValueType { return ContinueType }
+func (c *ContinueVal) String() string  { return "continue" }

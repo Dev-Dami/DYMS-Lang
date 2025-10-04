@@ -97,6 +97,12 @@ func (p *Parser) parseStmt() (ast.Stmt, *runtime.Error) {
 		return p.parseReturnStatement()
 	case lexer.Try:
 		return p.parseTryStatement()
+	case lexer.Break:
+		p.consume()
+		return &ast.BreakStatement{}, nil
+	case lexer.Continue:
+		p.consume()
+		return &ast.ContinueStatement{}, nil
 	case lexer.Let, lexer.Var, lexer.Const:
 		return p.parseVarDeclaration()
 	case lexer.If:

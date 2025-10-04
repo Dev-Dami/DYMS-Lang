@@ -31,6 +31,8 @@ const (
 	Return
 	Try
 	Catch
+	Break
+	Continue
 
 	// Grouping * Operators
 	BinaryOperator
@@ -124,6 +126,10 @@ func (t TokenType) String() string {
 		return "Try"
 	case Catch:
 		return "Catch"
+	case Break:
+		return "Break"
+	case Continue:
+		return "Continue"
 	default:
 		return "Unknown"
 	}
@@ -159,6 +165,8 @@ var keywords = map[string]TokenType{
 	"return":    Return,
 	"try":       Try,
 	"catch":     Catch,
+	"break":     Break,
+	"continue":  Continue,
 }
 
 func isAlpha(ch rune) bool {
