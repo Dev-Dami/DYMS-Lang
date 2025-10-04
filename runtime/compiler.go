@@ -128,6 +128,9 @@ func (c *Compiler) compileStmt(s ast.Stmt) {
 		aliasIdx := c.chunk.addConst(&StringVal{Value: n.Alias})
 		pathIdx := c.chunk.addConst(&StringVal{Value: n.Path})
 		c.chunk.emit(OP_IMPORT, aliasIdx, pathIdx)
+	case *ast.TryStatement:
+		// For now, try-catch is not optimized - fallback to interpreter
+		c.chunk.emit(OP_CONST, c.chunk.addConst(&NullVal{}))
 	default:
 		// expression statement
 		c.compileExpr(n.(ast.Expr))
@@ -191,6 +194,7 @@ func (c *Compiler) compileExpr(e ast.Expr) {
 		case "-": c.chunk.emit(OP_SUB)
 		case "*": c.chunk.emit(OP_MUL)
 		case "/": c.chunk.emit(OP_DIV)
+		case "%": c.chunk.emit(OP_MOD)
 		case "==": c.chunk.emit(OP_CMP_EQ)
 		case "!=": c.chunk.emit(OP_CMP_NE)
 		case "<":  c.chunk.emit(OP_CMP_LT)
@@ -214,6 +218,9 @@ func (c *Compiler) compileExpr(e ast.Expr) {
 	case *ast.ArrayLiteral:
 		c.chunk.emit(OP_CONST, c.chunk.addConst(&NullVal{}))
 	case *ast.MapLiteral:
+		c.chunk.emit(OP_CONST, c.chunk.addConst(&NullVal{}))
+	case *ast.UnaryExpr:
+		// For now, unary expressions are not optimized - fallback to interpreter
 		c.chunk.emit(OP_CONST, c.chunk.addConst(&NullVal{}))
 	default:
 		c.chunk.emit(OP_CONST, c.chunk.addConst(&NullVal{}))

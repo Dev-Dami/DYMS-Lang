@@ -29,9 +29,14 @@ const (
 	As
 	Funct
 	Return
+	Try
+	Catch
 
 	// Grouping * Operators
 	BinaryOperator
+	Modulo
+	Increment
+	Decrement
 	Equals
 	ComparisonOperator
 	LogicalOperator
@@ -77,6 +82,12 @@ func (t TokenType) String() string {
 		return "False"
 	case BinaryOperator:
 		return "BinaryOperator"
+	case Modulo:
+		return "Modulo"
+	case Increment:
+		return "Increment"
+	case Decrement:
+		return "Decrement"
 	case Equals:
 		return "Equals"
 	case ComparisonOperator:
@@ -109,6 +120,10 @@ func (t TokenType) String() string {
 		return "Funct"
 	case Return:
 		return "Return"
+	case Try:
+		return "Try"
+	case Catch:
+		return "Catch"
 	default:
 		return "Unknown"
 	}
@@ -142,6 +157,8 @@ var keywords = map[string]TokenType{
 	"as":        As,
 	"funct":     Funct,
 	"return":    Return,
+	"try":       Try,
+	"catch":     Catch,
 }
 
 func isAlpha(ch rune) bool {
@@ -216,7 +233,31 @@ func Tokenize(sourceCode string) []Token {
 			tokens = append(tokens, token(string(ch), Dot, line, col))
 			src = src[1:]
 			col++
-		} else if ch == '+' || ch == '-' || ch == '*' || ch == '/' {
+		} else if ch == '%' {
+			tokens = append(tokens, token(string(ch), Modulo, line, col))
+			src = src[1:]
+			col++
+		} else if ch == '+' {
+			if len(src) > 1 && src[1] == '+' {
+				tokens = append(tokens, token("++", Increment, line, col))
+				src = src[2:]
+				col += 2
+			} else {
+				tokens = append(tokens, token(string(ch), BinaryOperator, line, col))
+				src = src[1:]
+				col++
+			}
+		} else if ch == '-' {
+			if len(src) > 1 && src[1] == '-' {
+				tokens = append(tokens, token("--", Decrement, line, col))
+				src = src[2:]
+				col += 2
+			} else {
+				tokens = append(tokens, token(string(ch), BinaryOperator, line, col))
+				src = src[1:]
+				col++
+			}
+		} else if ch == '*' || ch == '/' {
 			if ch == '/' && len(src) > 1 && src[1] == '/' {
 				// Skip comment
 				for len(src) > 0 && src[0] != '\n' {

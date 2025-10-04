@@ -176,6 +176,10 @@ func Evaluate(stmt ast.Stmt, scope *Environment) (RuntimeVal, *Error) {
 		val, err := Evaluate(s.Value, scope)
 		if err != nil { return nil, err }
 		return &ReturnVal{Inner: val}, nil
+	case *ast.UnaryExpr:
+		return evalUnaryExpr(s, scope)
+	case *ast.TryStatement:
+		return evalTryStatement(s, scope)
 	default:
 		return nil, NewError(fmt.Sprintf("unknown statement type: %T", s), 0, 0)
 	}
@@ -339,6 +343,11 @@ func evalBinaryExpr(expr *ast.BinaryExpr, scope *Environment) (RuntimeVal, *Erro
 					return nil, NewError("division by zero", 0, 0)
 				}
 				return &NumberVal{Value: leftNum.Value / rightNum.Value}, nil
+			case "%":
+				if rightNum.Value == 0 {
+					return nil, NewError("modulo by zero", 0, 0)
+				}
+				return &NumberVal{Value: float64(int(leftNum.Value) % int(rightNum.Value))}, nil
 			case "==":
 				return &BooleanVal{Value: leftNum.Value == rightNum.Value}, nil
 			case "!=":
@@ -658,6 +667,42 @@ func evalImport(imp *ast.ImportStatement, scope *Environment) (RuntimeVal, *Erro
 	}
 	scope.DeclareVar(imp.Alias, mod, true)
 	return mod, nil
+}
+
+func evalUnaryExpr(expr *ast.UnaryExpr, scope *Environment) (RuntimeVal, *Error) {
+	// Only identifiers are valid targets for ++/--
+	operand, ok := expr.Operand.(*ast.Identifier)
+	if !ok {
+		return nil, NewError("increment/decrement target must be an identifier", 0, 0)
+	}
+
+	current := scope.LookupVar(operand.Symbol)
+	num, ok := current.(*NumberVal)
+	if !ok {
+		return nil, NewError("increment/decrement requires numeric variable", 0, 0)
+	}
+
+	if expr.Operator == "++" {
+		newVal := &NumberVal{Value: num.Value + 1}
+		scope.AssignVar(operand.Symbol, newVal)
+		if expr.Prefix { return newVal, nil }
+		return num, nil
+	} else if expr.Operator == "--" {
+		newVal := &NumberVal{Value: num.Value - 1}
+		scope.AssignVar(operand.Symbol, newVal)
+		if expr.Prefix { return newVal, nil }
+		return num, nil
+	}
+	return nil, NewError("unknown unary operator", 0, 0)
+}
+
+func evalTryStatement(ts *ast.TryStatement, scope *Environment) (RuntimeVal, *Error) {
+	// Evaluate try block; on error, bind to catch var and run catch block.
+	res, err := evalBlockStatement(ts.TryBlock, scope)
+	if err == nil { return res, nil }
+	catchScope := NewEnvironment(scope)
+	catchScope.DeclareVar(ts.ErrorVar, &StringVal{Value: err.Message}, false)
+	return evalBlockStatement(ts.CatchBlock, catchScope)
 }
 
 func evalMember(obj RuntimeVal, prop string) (RuntimeVal, *Error) {

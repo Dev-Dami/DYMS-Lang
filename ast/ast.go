@@ -29,6 +29,9 @@ const (
 	ImportStatementNode NodeType = "ImportStatement"
 	FunctionDeclarationNode NodeType = "FunctionDeclaration"
 	ReturnStatementNode    NodeType = "ReturnStatement"
+	UnaryExprNode          NodeType = "UnaryExpr"
+	TryStatementNode       NodeType = "TryStatement"
+	CatchStatementNode     NodeType = "CatchStatement"
 )
 
 type Stmt interface {
@@ -163,6 +166,23 @@ type ReturnStatement struct {
 }
 func (rs *ReturnStatement) Kind() NodeType { return ReturnStatementNode }
 
+// Unary expressions: ++x, --x, x++, x--
+type UnaryExpr struct {
+	Operand  Expr
+	Operator string
+	Prefix   bool // true for ++x, false for x++
+}
+func (u *UnaryExpr) Kind() NodeType { return UnaryExprNode }
+func (u *UnaryExpr) exprNode()      {}
+
+// Try-catch statement: try { ... } catch(e) { ... }
+type TryStatement struct {
+	TryBlock   *BlockStatement
+	CatchBlock *BlockStatement
+	ErrorVar   string
+}
+func (ts *TryStatement) Kind() NodeType { return TryStatementNode }
+
 type Property struct {
 	Key   Expr
 	Value Expr
@@ -289,6 +309,21 @@ case *MapLiteral:
 		result = out.String()
 	case *ReturnStatement:
 		result = fmt.Sprintf("return %s", PrettyPrint(node.Value))
+	case *UnaryExpr:
+		if node.Prefix {
+			result = fmt.Sprintf("%s%s", node.Operator, PrettyPrint(node.Operand))
+		} else {
+			result = fmt.Sprintf("%s%s", PrettyPrint(node.Operand), node.Operator)
+		}
+	case *TryStatement:
+		var out bytes.Buffer
+		out.WriteString("try ")
+		out.WriteString(PrettyPrint(node.TryBlock))
+		out.WriteString(" catch(")
+		out.WriteString(node.ErrorVar)
+		out.WriteString(") ")
+		out.WriteString(PrettyPrint(node.CatchBlock))
+		result = out.String()
 	default:
 		result = fmt.Sprintf("Unknown statement type: %T", e)
 	}

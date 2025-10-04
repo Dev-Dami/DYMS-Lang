@@ -107,7 +107,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 			slot := code[fr.ip]
 			fr.ip++
 			vm.stack[fr.base+int(slot)] = vm.peek()
-		case OP_ADD, OP_SUB, OP_MUL, OP_DIV:
+		case OP_ADD, OP_SUB, OP_MUL, OP_DIV, OP_MOD:
 			r := vm.pop()
 			l := vm.pop()
 			ln, lok := l.(*NumberVal)
@@ -125,6 +125,11 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 						return nil, NewError("division by zero", 0, 0)
 					}
 					vm.push(&NumberVal{Value: ln.Value / rn.Value})
+				case OP_MOD:
+					if rn.Value == 0 {
+						return nil, NewError("modulo by zero", 0, 0)
+					}
+					vm.push(&NumberVal{Value: float64(int(ln.Value) % int(rn.Value))})
 				}
 				break
 			}
@@ -447,6 +452,8 @@ func (op OpCode) String() string {
 		return "MUL"
 	case OP_DIV:
 		return "DIV"
+	case OP_MOD:
+		return "MOD"
 	case OP_CMP_EQ:
 		return "CMP_EQ"
 	case OP_CMP_NE:

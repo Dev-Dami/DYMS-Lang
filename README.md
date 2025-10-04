@@ -266,6 +266,9 @@ All test files are organized in the `test/` directory for easy access:
 
 ### In Progress
 
+- Modulo, increment/decrement operators
+- Exception handling (`try/catch`)
+
 ### Future Enhancements
 
 - Modulo, increment/decrement operators

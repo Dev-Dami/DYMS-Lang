@@ -64,6 +64,8 @@ func (p *Parser) parseStmt() (ast.Stmt, *runtime.Error) {
 		return p.parseFunctionDeclaration()
 	case lexer.Return:
 		return p.parseReturnStatement()
+	case lexer.Try:
+		return p.parseTryStatement()
 	case lexer.Let, lexer.Var, lexer.Const:
 		return p.parseVarDeclaration()
 	case lexer.If:
@@ -307,14 +309,14 @@ func (p *Parser) parseAdditiveExpr() (ast.Expr, *runtime.Error) {
 }
 
 func (p *Parser) parseMultiplicativeExpr() (ast.Expr, *runtime.Error) {
-	left, err := p.parseCallExpr()
+	left, err := p.parseUnaryExpr()
 	if err != nil {
 		return nil, err
 	}
 
-	for p.peek().Value == "*" || p.peek().Value == "/" {
+	for p.peek().Value == "*" || p.peek().Value == "/" || p.peek().Type == lexer.Modulo {
 		op := p.consume().Value
-		right, err := p.parseCallExpr()
+		right, err := p.parseUnaryExpr()
 		if err != nil {
 			return nil, err
 		}
@@ -326,6 +328,32 @@ func (p *Parser) parseMultiplicativeExpr() (ast.Expr, *runtime.Error) {
 	}
 
 	return left, nil
+}
+
+func (p *Parser) parseUnaryExpr() (ast.Expr, *runtime.Error) {
+	// Prefix operators: ++x, --x
+	if p.peek().Type == lexer.Increment || p.peek().Type == lexer.Decrement {
+		op := p.consume().Value
+		operand, err := p.parseCallExpr()
+		if err != nil {
+			return nil, err
+		}
+		return &ast.UnaryExpr{Operand: operand, Operator: op, Prefix: true}, nil
+	}
+
+	// Parse primary expression first
+	expr, err := p.parseCallExpr()
+	if err != nil {
+		return nil, err
+	}
+
+	// Postfix operators: x++, x--
+	if p.peek().Type == lexer.Increment || p.peek().Type == lexer.Decrement {
+		op := p.consume().Value
+		return &ast.UnaryExpr{Operand: expr, Operator: op, Prefix: false}, nil
+	}
+
+	return expr, nil
 }
 
 func (p *Parser) parseCallExpr() (ast.Expr, *runtime.Error) {
@@ -478,6 +506,45 @@ func (p *Parser) parseReturnStatement() (ast.Stmt, *runtime.Error) {
 		return nil, err
 	}
 	return &ast.ReturnStatement{Value: value}, nil
+}
+
+func (p *Parser) parseTryStatement() (ast.Stmt, *runtime.Error) {
+	p.consume() // try
+	tryBlock, err := p.parseBlockStatement()
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.expect(lexer.Catch, "Expected 'catch' after try block")
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.expect(lexer.OpenParen, "Expected '(' after 'catch'")
+	if err != nil {
+		return nil, err
+	}
+
+	errorVar, err := p.expect(lexer.Identifier, "Expected error variable name in catch clause")
+	if err != nil {
+		return nil, err
+	}
+
+	_, err = p.expect(lexer.CloseParen, "Expected ')' after error variable")
+	if err != nil {
+		return nil, err
+	}
+
+	catchBlock, err := p.parseBlockStatement()
+	if err != nil {
+		return nil, err
+	}
+
+	return &ast.TryStatement{
+		TryBlock:   tryBlock,
+		CatchBlock: catchBlock,
+		ErrorVar:   errorVar.Value,
+	}, nil
 }
 
 func (p *Parser) parseArrayLiteral() (ast.Expr, *runtime.Error) {

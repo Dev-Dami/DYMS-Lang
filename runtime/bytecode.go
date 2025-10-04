@@ -16,6 +16,7 @@ const (
 	OP_SUB
 	OP_MUL
 	OP_DIV
+	OP_MOD
 	OP_CMP_EQ
 	OP_CMP_NE
 	OP_CMP_LT
