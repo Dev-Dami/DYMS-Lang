@@ -339,17 +339,17 @@ func Tokenize(sourceCode string) []Token {
 			} else if isAlpha(ch) {
 				startCol := col
 				ident := ""
-				for len(src) > 0 && (isAlpha(src[0]) || isInt(src[0])) {
-					ident += string(src[0])
-					src = src[1:]
-					col++
-				}
+			for len(src) > 0 && (isAlpha(src[0]) || isInt(src[0]) || src[0] == '_') {
+				ident += string(src[0])
+				src = src[1:]
+				col++
+			}
 
 				if ident == "for" && len(src) > 0 && src[0] == ' ' {
 					tempSrc := src[1:]
 					tempCol := col + 1
 					nextIdent := ""
-					for len(tempSrc) > 0 && (isAlpha(tempSrc[0]) || isInt(tempSrc[0])) {
+					for len(tempSrc) > 0 && (isAlpha(tempSrc[0]) || isInt(tempSrc[0]) || tempSrc[0] == '_') {
 						nextIdent += string(tempSrc[0])
 						tempSrc = tempSrc[1:]
 						tempCol++

@@ -52,6 +52,14 @@ echo Running sub-150ms performance test:
 echo.
 echo Running fast loop test:
 %BINARY_PATH% test\18_fast_loop_test.hg
+echo.
+echo Running new features test:
+echo   - Break/Continue test:
+%BINARY_PATH% test\21_simple_test.hg
+echo   - Increment/Decrement test:
+%BINARY_PATH% test\22_inc_dec_test.hg
+echo   - Try/Catch test:
+%BINARY_PATH% test\23_try_catch_test.hg
 goto end
 
 :deps

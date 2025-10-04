@@ -34,12 +34,18 @@ func (env *Environment) AssignVar(name string, value RuntimeVal) RuntimeVal {
 		panic(fmt.Sprintf("Cannot assign to constant variable '%s'.", name))
 	}
 	target := env.Resolve(name)
+	if target == nil {
+		panic(fmt.Sprintf("Cannot assign to undefined variable '%s'.", name))
+	}
 	target.variables[name] = value
 	return value
 }
 
 func (env *Environment) LookupVar(name string) RuntimeVal {
 	target := env.Resolve(name)
+	if target == nil {
+		return nil
+	}
 	return target.variables[name]
 }
 
@@ -48,7 +54,7 @@ func (env *Environment) Resolve(name string) *Environment {
 		return env
 	}
 	if env.parent == nil {
-		panic(fmt.Sprintf("Cannot resolve '%s'. Variable does not exist.", name))
+		return nil
 	}
 	return env.parent.Resolve(name)
 }

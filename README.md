@@ -39,19 +39,23 @@
   - Built-in `fmaths` library: Advanced mathematical functions and constants
 
 - **Operators**:
-  - Arithmetic: `+`, `-`, `*`, `/` (handles division by zero)
+  - Arithmetic: `+`, `-`, `*`, `/`, `%` (handles division by zero)
   - Comparison: `==`, `!=`, `<`, `<=`, `>`, `>=`
   - Logical: `&&`, `||`
+  - Increment/Decrement: `++var`, `var++`, `--var`, `var--`
   - String concatenation with automatic type conversion
 
 - **Control Flow**:
   - Conditional: `if/else`
-  - Loops: `while` and `for range(i, N)`
+  - Loops: `while` and `for range(i, N)` with `break` and `continue` support
+  - Exception handling: `try/catch` blocks
 
 - **Advanced Features**:
+  - **Hybrid execution engine**: Smart routing between VM and interpreter based on code complexity
   - **High-performance bytecode VM**: 20+ optimized opcodes for common operations
   - **Compiler optimizations**: Peephole optimization, constant folding, dead code elimination
-  - **Fast execution**: Specialized opcodes for constants (0, 1, true, false), loops, string concatenation
+  - **Ultra-fast loops**: Specialized fast paths for common loop patterns (sub-150ms performance)
+  - **Memory optimization**: Object pooling and reuse for runtime values
   - Property access via dot notation for maps
   - String escaping: `\n`, `\t`, `\r\n`, `\\`, `\"`
   - Single-line comments: `//`
@@ -78,8 +82,13 @@ go run . test.hg
 ### Build and run as binary
 
 ```powershell
-go build -o hg.exe .
-./hg.exe types_demo.hg
+# Using build script (Windows)
+.\build.bat build
+.\build\dyms.exe test\01_basic_features.hg
+
+# Manual build
+go build -o dyms.exe .
+.\dyms.exe test\01_basic_features.hg
 ```
 
 ---
@@ -87,13 +96,21 @@ go build -o hg.exe .
 ## Command-Line Usage
 
 ```text
-hg <filename>
+dyms <filename>
 ```
 
-**Example:**
+**Examples:**
 
 ```powershell
-go run . other.hg
+# Run directly with Go
+go run . test/01_basic_features.hg
+
+# Build and run
+.\build.bat build
+.\build\dyms.exe test/21_simple_test.hg
+
+# Run all tests
+.\build.bat test
 ```
 
 ---
@@ -108,11 +125,15 @@ var y = 20
 const who = "DYMS"
 let ok = true
 let arr = [1, 2, 3, "mixed"]
-let m = {"name": "DYMS", "version": 0.4, "stable": ok}
+let m = {"name": "DYMS", "version": 0.5, "stable": ok}
 
 if (x > 5) { println("x > 5") } else { println("x <= 5") }
-for range(i, 3) { println(i) }
-while (y > 0) { y = y - 1 }
+for range(i, 10) {
+    if (i == 5) { break }
+    if (i % 2 == 0) { continue }
+    println(i)
+}
+while (y > 0) { --y }
 println(m.name)
 ```
 
@@ -129,10 +150,23 @@ println(message)
 funct makeCounter() {
     let count = 0
     funct increment() {
-        count = count + 1
+        ++count
         return count
     }
     return increment
+}
+
+// Exception handling
+funct safeDivide(a, b) {
+    try {
+        if (b == 0) {
+            return "Division by zero"
+        }
+        return a / b
+    } catch(e) {
+        println("Error:", e)
+        return null
+    }
 }
 ```
 
@@ -193,9 +227,11 @@ println("max(5, 3) = " + math.max(5, 3))   // 5
 
 1. **Lexer → Tokens**: [lexer/lexer.go](./lexer/lexer.go)
 2. **Parser → AST**: [parser/parser.go](./parser/parser.go)
-3. **Dual Runtime System**:
+3. **Hybrid Runtime System**: [runtime/hybrid.go](./runtime/hybrid.go)
+   - Smart routing between VM and interpreter based on code complexity
    - AST → Compiler → Bytecode → VM (optimized performance)
    - AST → Interpreter (flexible evaluation)
+   - Performance tracking and adaptive execution
 
 ### Core Components
 
@@ -260,24 +296,25 @@ All test files are organized in the `test/` directory for easy access:
 
 ### Completed (v0.5)
 
+- **Hybrid execution engine**: Smart VM/interpreter routing with performance tracking
+- **Loop control flow**: `break` and `continue` statements with proper scoping
+- **Increment/decrement operators**: Pre/post `++` and `--` with identifier support
+- **Exception handling**: `try/catch` blocks with error variable binding
+- **Performance optimizations**: Ultra-fast loops with sub-150ms execution
+- **Memory improvements**: Object pooling and variable reuse patterns
 - Array and map bracket indexing
 - Expanded standard library with advanced `fmaths` module
-- Improved parser diagnostics
-
-### In Progress
-
-- Modulo, increment/decrement operators
-- Exception handling (`try/catch`)
+- Modulo operator (`%`) support
+- Enhanced identifier support (underscores allowed)
 
 ### Future Enhancements
 
-- Modulo, increment/decrement operators
-- `break`, `continue`, `switch/case`
-- Exception handling (`try/catch`)
+- `switch/case` statements
 - File I/O functions
 - Regular expressions
 - Debugging tools
 - User-defined modules
+- Advanced VM optimizations
 
 ---
 

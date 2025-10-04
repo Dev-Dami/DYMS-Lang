@@ -187,7 +187,11 @@ func Evaluate(stmt ast.Stmt, scope *Environment) (RuntimeVal, *Error) {
 			return nil, NewError(fmt.Sprintf("not a function: %T", fn), 0, 0)
 		}
 	case *ast.Identifier:
-		return scope.LookupVar(s.Symbol), nil
+		val := scope.LookupVar(s.Symbol)
+		if val == nil {
+			return nil, NewError(fmt.Sprintf("undefined variable: %s", s.Symbol), 0, 0)
+		}
+		return val, nil
 	case *ast.MemberExpr:
 		obj, err := Evaluate(s.Object, scope)
 		if err != nil {
