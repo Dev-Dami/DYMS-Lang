@@ -8,18 +8,18 @@ import (
 type frame struct {
 	fn   *VMFunction
 	ip   int
-	base int // for base index in the stack 
+	base int // base -> stack index for my locals
 }
 
 type VM struct {
-	stack []RuntimeVal
-	sp    int
-	frames []frame
+	stack   []RuntimeVal
+	sp      int
+	frames  []frame
 	globals *Environment
 }
 
+// newvm -> pre-allocated stack
 func NewVM(globals *Environment) *VM {
-	// for pre-allocating larger stack for better performance
 	return &VM{
 		stack:   make([]RuntimeVal, 1024),
 		sp:      0,
@@ -28,11 +28,10 @@ func NewVM(globals *Environment) *VM {
 	}
 }
 
-
-// stack operations
+// stack ops ->
 func (vm *VM) push(v RuntimeVal) {
 	if vm.sp >= len(vm.stack) {
-		// for growing stack if needed
+		// push -> grow stack if needed
 		newStack := make([]RuntimeVal, len(vm.stack)*2)
 		copy(newStack, vm.stack)
 		vm.stack = newStack
@@ -44,23 +43,24 @@ func (vm *VM) push(v RuntimeVal) {
 func (vm *VM) pop() RuntimeVal {
 	vm.sp--
 	v := vm.stack[vm.sp]
-	vm.stack[vm.sp] = nil // help GC
+	vm.stack[vm.sp] = nil // pop -> clear to help gc
 	return v
 }
 
 func (vm *VM) peek() RuntimeVal {
 	return vm.stack[vm.sp-1]
 }
-// Fast operations -> common constants
+
+// fast ops -> common constants
 func (vm *VM) pushConst0() { vm.stack[vm.sp] = &NumberVal{Value: 0}; vm.sp++ }
 func (vm *VM) pushConst1() { vm.stack[vm.sp] = &NumberVal{Value: 1}; vm.sp++ }
-func (vm *VM) pushTrue() { vm.stack[vm.sp] = &BooleanVal{Value: true}; vm.sp++ }
-func (vm *VM) pushFalse() { vm.stack[vm.sp] = &BooleanVal{Value: false}; vm.sp++ }
-func (vm *VM) pushNull() { vm.stack[vm.sp] = &NullVal{}; vm.sp++ }
+func (vm *VM) pushTrue()   { vm.stack[vm.sp] = &BooleanVal{Value: true}; vm.sp++ }
+func (vm *VM) pushFalse()  { vm.stack[vm.sp] = &BooleanVal{Value: false}; vm.sp++ }
+func (vm *VM) pushNull()   { vm.stack[vm.sp] = &NullVal{}; vm.sp++ }
 
+// callfunction -> expect args on stack
 func (vm *VM) callFunction(fn *VMFunction, argc int) {
-	// Expect args already pushed; place them above locals
-	vm.frames = append(vm.frames, frame{fn: fn, ip: 0, base: vm.sp-argc})
+	vm.frames = append(vm.frames, frame{fn: fn, ip: 0, base: vm.sp - argc})
 }
 
 func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
@@ -193,7 +193,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 				for i := argc - 1; i >= 0; i-- {
 					args[i] = vm.pop()
 				}
-				vm.pop() 
+				vm.pop()
 				res, err := f(args...)
 				if err != nil {
 					return nil, err
@@ -241,8 +241,8 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 				return nil, NewError("unknown module: "+path, 0, 0)
 			}
 			vm.globals.DeclareVar(alias, mod, true)
-		
-		// fast opcodes common constants
+
+		// fast opcodes ->
 		case OP_LOAD_CONST_0:
 			vm.pushConst0()
 		case OP_LOAD_CONST_1:
@@ -253,8 +253,8 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 			vm.pushFalse()
 		case OP_LOAD_NULL:
 			vm.pushNull()
-		
-		// stack manipulation
+
+		// stack opcodes ->
 		case OP_DUP:
 			val := vm.peek()
 			vm.push(val)
@@ -263,26 +263,26 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 			b := vm.pop()
 			vm.push(a)
 			vm.push(b)
-		
-		// local variable operations
+
+		// local var opcodes ->
 		case OP_INCREMENT_LOCAL:
 			slot := code[fr.ip]
 			fr.ip++
-			if num, ok := vm.stack[fr.base+slot].(*NumberVal); ok {
-				vm.stack[fr.base+slot] = &NumberVal{Value: num.Value + 1}
+			if num, ok := vm.stack[fr.base+int(slot)].(*NumberVal); ok {
+				vm.stack[fr.base+int(slot)] = &NumberVal{Value: num.Value + 1}
 			} else {
 				return nil, NewError("cannot increment non-number", 0, 0)
 			}
 		case OP_DECREMENT_LOCAL:
 			slot := code[fr.ip]
 			fr.ip++
-			if num, ok := vm.stack[fr.base+slot].(*NumberVal); ok {
-				vm.stack[fr.base+slot] = &NumberVal{Value: num.Value - 1}
+			if num, ok := vm.stack[fr.base+int(slot)].(*NumberVal); ok {
+				vm.stack[fr.base+int(slot)] = &NumberVal{Value: num.Value - 1}
 			} else {
 				return nil, NewError("cannot decrement non-number", 0, 0)
 			}
-		
-		// string concatenation
+
+		// string opcodes ->
 		case OP_CONCAT_2:
 			r := vm.pop()
 			l := vm.pop()
@@ -291,25 +291,25 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 			n := code[fr.ip]
 			fr.ip++
 			result := ""
-			for i := 0; i < n; i++ {
+			for i := 0; i < int(n); i++ {
 				result = vm.pop().String() + result
 			}
 			vm.push(&StringVal{Value: result})
-		
-		// array and map operations
+
+		// collection opcodes ->
 		case OP_MAKE_ARRAY:
 			n := code[fr.ip]
 			fr.ip++
 			elements := make([]RuntimeVal, n)
-			for i := n - 1; i >= 0; i-- {
+			for i := int(n) - 1; i >= 0; i-- {
 				elements[i] = vm.pop()
 			}
 			vm.push(&ArrayVal{Elements: elements})
 		case OP_MAKE_MAP:
-			n := code[fr.ip] // num of key-value pairs
+			n := code[fr.ip] // n -> key-value pairs
 			fr.ip++
 			props := make(map[string]RuntimeVal)
-			for i := 0; i < n; i++ {
+			for i := 0; i < int(n); i++ {
 				value := vm.pop()
 				key := vm.pop()
 				if keyStr, ok := key.(*StringVal); ok {
@@ -319,23 +319,23 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 				}
 			}
 			vm.push(&MapVal{Properties: props})
-		
-		// for loop
+
+		// for loop ->
 		case OP_FOR_LOOP_NEXT:
 			slot := code[fr.ip]
 			fr.ip++
-			// for getting the counter and limit
-			counter, ok1 := vm.stack[fr.base+slot].(*NumberVal)
+			// for_loop_next -> get counter & limit
+			counter, ok1 := vm.stack[fr.base+int(slot)].(*NumberVal)
 			limit, ok2 := vm.peek().(*NumberVal)
 			if !ok1 || !ok2 {
 				return nil, NewError("for loop requires numeric values", 0, 0)
 			}
-			// checking the conditions first (counter < limit)
+			// -> check counter < limit
 			vm.push(&BooleanVal{Value: counter.Value < limit.Value})
-			// then increment counter for next iteration
-			vm.stack[fr.base+slot] = &NumberVal{Value: counter.Value + 1}
-		
-		// math operations
+			// -> increment counter
+			vm.stack[fr.base+int(slot)] = &NumberVal{Value: counter.Value + 1}
+
+		// math opcodes ->
 		case OP_POW:
 			y := vm.pop()
 			x := vm.pop()
@@ -346,7 +346,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 			}
 			result := math.Pow(xn.Value, yn.Value)
 			vm.push(&NumberVal{Value: result})
-			
+
 		case OP_SQRT:
 			x := vm.pop()
 			xn, ok := x.(*NumberVal)
@@ -357,7 +357,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 				return nil, NewError("sqrt of negative number", 0, 0)
 			}
 			vm.push(&NumberVal{Value: math.Sqrt(xn.Value)})
-			
+
 		case OP_SIN:
 			x := vm.pop()
 			xn, ok := x.(*NumberVal)
@@ -365,7 +365,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 				return nil, NewError("sin requires numeric argument", 0, 0)
 			}
 			vm.push(&NumberVal{Value: math.Sin(xn.Value)})
-			
+
 		case OP_COS:
 			x := vm.pop()
 			xn, ok := x.(*NumberVal)
@@ -373,7 +373,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 				return nil, NewError("cos requires numeric argument", 0, 0)
 			}
 			vm.push(&NumberVal{Value: math.Cos(xn.Value)})
-			
+
 		case OP_LOG:
 			x := vm.pop()
 			xn, ok := x.(*NumberVal)
@@ -384,7 +384,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 				return nil, NewError("log of non-positive number", 0, 0)
 			}
 			vm.push(&NumberVal{Value: math.Log(xn.Value)})
-			
+
 		case OP_EXP:
 			x := vm.pop()
 			xn, ok := x.(*NumberVal)
@@ -392,7 +392,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 				return nil, NewError("exp requires numeric argument", 0, 0)
 			}
 			vm.push(&NumberVal{Value: math.Exp(xn.Value)})
-			
+
 		case OP_ABS:
 			x := vm.pop()
 			xn, ok := x.(*NumberVal)
@@ -400,7 +400,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 				return nil, NewError("abs requires numeric argument", 0, 0)
 			}
 			vm.push(&NumberVal{Value: math.Abs(xn.Value)})
-			
+
 		case OP_FLOOR:
 			x := vm.pop()
 			xn, ok := x.(*NumberVal)
@@ -408,7 +408,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 				return nil, NewError("floor requires numeric argument", 0, 0)
 			}
 			vm.push(&NumberVal{Value: math.Floor(xn.Value)})
-			
+
 		case OP_CEIL:
 			x := vm.pop()
 			xn, ok := x.(*NumberVal)
@@ -416,7 +416,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 				return nil, NewError("ceil requires numeric argument", 0, 0)
 			}
 			vm.push(&NumberVal{Value: math.Ceil(xn.Value)})
-		
+
 		default:
 			return nil, NewError("unknown opcode", 0, 0)
 		}
@@ -429,53 +429,99 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 
 func (op OpCode) String() string {
 	switch op {
-	case OP_CONST: return "CONST"
-	case OP_LOAD_GLOBAL: return "LOAD_GLOBAL"
-	case OP_STORE_GLOBAL: return "STORE_GLOBAL"
-	case OP_LOAD_LOCAL: return "LOAD_LOCAL"
-	case OP_STORE_LOCAL: return "STORE_LOCAL"
-	case OP_ADD: return "ADD"
-	case OP_SUB: return "SUB"
-	case OP_MUL: return "MUL"
-	case OP_DIV: return "DIV"
-	case OP_CMP_EQ: return "CMP_EQ"
-	case OP_CMP_NE: return "CMP_NE"
-	case OP_CMP_LT: return "CMP_LT"
-	case OP_CMP_LE: return "CMP_LE"
-	case OP_CMP_GT: return "CMP_GT"
-	case OP_CMP_GE: return "CMP_GE"
-	case OP_JUMP: return "JUMP"
-	case OP_JUMP_IF_FALSE: return "JUMP_IF_FALSE"
-	case OP_CALL: return "CALL"
-	case OP_RET: return "RET"
-	case OP_POP: return "POP"
-	case OP_GET_PROP: return "GET_PROP"
-	case OP_IMPORT: return "IMPORT"
-	// fast-op codes
-	case OP_LOAD_CONST_0: return "LOAD_CONST_0"
-	case OP_LOAD_CONST_1: return "LOAD_CONST_1"
-	case OP_LOAD_TRUE: return "LOAD_TRUE"
-	case OP_LOAD_FALSE: return "LOAD_FALSE"
-	case OP_LOAD_NULL: return "LOAD_NULL"
-	case OP_DUP: return "DUP"
-	case OP_SWAP: return "SWAP"
-	case OP_INCREMENT_LOCAL: return "INCREMENT_LOCAL"
-	case OP_DECREMENT_LOCAL: return "DECREMENT_LOCAL"
-	case OP_CONCAT_2: return "CONCAT_2"
-	case OP_CONCAT_N: return "CONCAT_N"
-	case OP_MAKE_ARRAY: return "MAKE_ARRAY"
-	case OP_MAKE_MAP: return "MAKE_MAP"
-	case OP_FOR_LOOP_NEXT: return "FOR_LOOP_NEXT"
-	// mathematics opcodes
-	case OP_POW: return "POW"
-	case OP_SQRT: return "SQRT"
-	case OP_SIN: return "SIN"
-	case OP_COS: return "COS"
-	case OP_LOG: return "LOG"
-	case OP_EXP: return "EXP"
-	case OP_ABS: return "ABS"
-	case OP_FLOOR: return "FLOOR"
-	case OP_CEIL: return "CEIL"
-	default: return "?"
+	case OP_CONST:
+		return "CONST"
+	case OP_LOAD_GLOBAL:
+		return "LOAD_GLOBAL"
+	case OP_STORE_GLOBAL:
+		return "STORE_GLOBAL"
+	case OP_LOAD_LOCAL:
+		return "LOAD_LOCAL"
+	case OP_STORE_LOCAL:
+		return "STORE_LOCAL"
+	case OP_ADD:
+		return "ADD"
+	case OP_SUB:
+		return "SUB"
+	case OP_MUL:
+		return "MUL"
+	case OP_DIV:
+		return "DIV"
+	case OP_CMP_EQ:
+		return "CMP_EQ"
+	case OP_CMP_NE:
+		return "CMP_NE"
+	case OP_CMP_LT:
+		return "CMP_LT"
+	case OP_CMP_LE:
+		return "CMP_LE"
+	case OP_CMP_GT:
+		return "CMP_GT"
+	case OP_CMP_GE:
+		return "CMP_GE"
+	case OP_JUMP:
+		return "JUMP"
+	case OP_JUMP_IF_FALSE:
+		return "JUMP_IF_FALSE"
+	case OP_CALL:
+		return "CALL"
+	case OP_RET:
+		return "RET"
+	case OP_POP:
+		return "POP"
+	case OP_GET_PROP:
+		return "GET_PROP"
+	case OP_IMPORT:
+		return "IMPORT"
+	// fast opcodes ->
+	case OP_LOAD_CONST_0:
+		return "LOAD_CONST_0"
+	case OP_LOAD_CONST_1:
+		return "LOAD_CONST_1"
+	case OP_LOAD_TRUE:
+		return "LOAD_TRUE"
+	case OP_LOAD_FALSE:
+		return "LOAD_FALSE"
+	case OP_LOAD_NULL:
+		return "LOAD_NULL"
+	case OP_DUP:
+		return "DUP"
+	case OP_SWAP:
+		return "SWAP"
+	case OP_INCREMENT_LOCAL:
+		return "INCREMENT_LOCAL"
+	case OP_DECREMENT_LOCAL:
+		return "DECREMENT_LOCAL"
+	case OP_CONCAT_2:
+		return "CONCAT_2"
+	case OP_CONCAT_N:
+		return "CONCAT_N"
+	case OP_MAKE_ARRAY:
+		return "MAKE_ARRAY"
+	case OP_MAKE_MAP:
+		return "MAKE_MAP"
+	case OP_FOR_LOOP_NEXT:
+		return "FOR_LOOP_NEXT"
+	// math opcodes ->
+	case OP_POW:
+		return "POW"
+	case OP_SQRT:
+		return "SQRT"
+	case OP_SIN:
+		return "SIN"
+	case OP_COS:
+		return "COS"
+	case OP_LOG:
+		return "LOG"
+	case OP_EXP:
+		return "EXP"
+	case OP_ABS:
+		return "ABS"
+	case OP_FLOOR:
+		return "FLOOR"
+	case OP_CEIL:
+		return "CEIL"
+	default:
+		return "?"
 	}
 }

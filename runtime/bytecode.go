@@ -7,11 +7,11 @@ type OpCode int
 
 const (
 	// Core opcodes
-	OP_CONST OpCode = iota // push constant by index
-	OP_LOAD_GLOBAL         // load global by name const index
-	OP_STORE_GLOBAL        // store global by name const index
-	OP_LOAD_LOCAL          // load local by slot
-	OP_STORE_LOCAL         // store local by slot
+	OP_CONST OpCode = iota
+	OP_LOAD_GLOBAL       
+	OP_STORE_GLOBAL       
+	OP_LOAD_LOCAL         
+	OP_STORE_LOCAL         
 	OP_ADD
 	OP_SUB
 	OP_MUL

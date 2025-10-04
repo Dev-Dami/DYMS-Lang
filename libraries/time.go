@@ -7,10 +7,10 @@ import (
 
 func RegisterTime(env *runtime.Environment) {
 	env.Set("now", runtime.BuiltinFunction(func(args ...runtime.Value) runtime.Value {
-		return runtime.Number(float64(time.Now().UnixNano()) / 1e9) // -> seconds
+		return runtime.Number(float64(time.Now().UnixNano()) / 1e9) // now -> seconds
 	}))
 	env.Set("millis", runtime.BuiltinFunction(func(args ...runtime.Value) runtime.Value {
-		return runtime.Number(float64(time.Now().UnixNano()) / 1e6) // -> milliseconds
+		return runtime.Number(float64(time.Now().UnixNano()) / 1e6) // millis -> milliseconds
 	}))
 	env.Set("sleep", runtime.BuiltinFunction(func(args ...runtime.Value) runtime.Value {
 		if len(args) < 1 {
@@ -22,5 +22,4 @@ func RegisterTime(env *runtime.Environment) {
 		}
 		return runtime.Null
 	}))
-}
 }

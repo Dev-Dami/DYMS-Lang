@@ -13,12 +13,12 @@ type Parser struct {
 	pos    int
 }
 
-// create new parser
+// parser ->
 func New(tokens []lexer.Token) *Parser {
 	return &Parser{tokens: tokens, pos: 0}
 }
 
-// helpers
+// helpers ->
 func (p *Parser) peek() lexer.Token {
 	if p.pos >= len(p.tokens) {
 		return lexer.Token{Type: -1, Value: ""}
@@ -40,7 +40,7 @@ func (p *Parser) expect(expected lexer.TokenType, message string) (lexer.Token, 
 	return tok, nil
 }
 
-// parse entire program
+// parseprogram ->
 func (p *Parser) ParseProgram() (*ast.Program, *runtime.Error) {
 	prog := &ast.Program{Body: []ast.Stmt{}}
 	for p.pos < len(p.tokens) {
@@ -55,7 +55,7 @@ func (p *Parser) ParseProgram() (*ast.Program, *runtime.Error) {
 	return prog, nil
 }
 
-// treat everything -> expression statement
+// parsestmt ->
 func (p *Parser) parseStmt() (ast.Stmt, *runtime.Error) {
 	switch p.peek().Type {
 	case lexer.Import:
@@ -73,7 +73,7 @@ func (p *Parser) parseStmt() (ast.Stmt, *runtime.Error) {
 	case lexer.While:
 		return p.parseWhileStatement()
 	case lexer.Else:
-		return nil, nil // Ignore else tokens, as they are handled by parseIfStatement
+		return nil, nil // else -> handled by if
 	case lexer.OpenBrace:
 		return p.parseBlockStatement()
 	default:
@@ -100,7 +100,7 @@ func (p *Parser) parseVarDeclaration() (ast.Stmt, *runtime.Error) {
 }
 
 func (p *Parser) parseIfStatement() (ast.Stmt, *runtime.Error) {
-	p.consume() // consume 'if'
+	p.consume() // if ->
 	_, err := p.expect(lexer.OpenParen, "Expected '(' after 'if'")
 	if err != nil {
 		return nil, err
@@ -120,7 +120,7 @@ func (p *Parser) parseIfStatement() (ast.Stmt, *runtime.Error) {
 
 	var alternative *ast.BlockStatement
 	if p.peek().Type == lexer.Else {
-		p.consume() // consume 'else'
+		p.consume() // else ->
 		alternative, err = p.parseBlockStatement()
 		if err != nil {
 			return nil, err
@@ -135,7 +135,7 @@ func (p *Parser) parseIfStatement() (ast.Stmt, *runtime.Error) {
 }
 
 func (p *Parser) parseForStatement() (ast.Stmt, *runtime.Error) {
-	p.consume() // consume 'for range'
+	p.consume() // for range ->
 	_, err := p.expect(lexer.OpenParen, "Expected '(' after 'for range'")
 	if err != nil {
 		return nil, err
@@ -169,7 +169,7 @@ func (p *Parser) parseForStatement() (ast.Stmt, *runtime.Error) {
 }
 
 func (p *Parser) parseWhileStatement() (ast.Stmt, *runtime.Error) {
-	p.consume() // consume 'while'
+	p.consume() // while ->
 	_, err := p.expect(lexer.OpenParen, "Expected '(' after 'while'")
 	if err != nil {
 		return nil, err
@@ -213,7 +213,7 @@ func (p *Parser) parseBlockStatement() (*ast.BlockStatement, *runtime.Error) {
 	return &ast.BlockStatement{Statements: statements}, nil
 }
 
-// parse an expression
+// parseexpr ->
 func (p *Parser) parseExpr() (ast.Expr, *runtime.Error) {
 	return p.parseAssignmentExpr()
 }
@@ -229,7 +229,7 @@ func (p *Parser) parseAssignmentExpr() (ast.Expr, *runtime.Error) {
 		if !isIdentifier {
 			return nil, runtime.NewError(fmt.Sprintf("Invalid assignment target: %T at line %d, column %d", left, p.peek().Line, p.peek().Column), p.peek().Line, p.peek().Column)
 		}
-		p.consume() // consume '='
+		p.consume() // = ->
 		value, err := p.parseAssignmentExpr()
 		if err != nil {
 			return nil, err
@@ -335,7 +335,7 @@ func (p *Parser) parseCallExpr() (ast.Expr, *runtime.Error) {
 	}
 
 	for p.peek().Type == lexer.OpenParen {
-		p.consume() // consume open paren
+		p.consume() // ( ->
 		args := []ast.Expr{}
 		if p.peek().Type != lexer.CloseParen {
 			for {
@@ -369,7 +369,7 @@ func (p *Parser) parseMemberExpr() (ast.Expr, *runtime.Error) {
 		return nil, err
 	}
 	for p.peek().Type == lexer.Dot {
-		p.consume() // '.'
+		p.consume() // . ->
 		prop, err := p.expect(lexer.Identifier, "Expected identifier after '.'")
 		if err != nil {
 			return nil, err
@@ -379,7 +379,7 @@ func (p *Parser) parseMemberExpr() (ast.Expr, *runtime.Error) {
 	return obj, nil
 }
 
-// parse literals and identifiers
+// parseprimary ->
 func (p *Parser) parsePrimary() (ast.Expr, *runtime.Error) {
 	tok := p.consume()
 	switch tok.Type {
@@ -417,7 +417,7 @@ func (p *Parser) parsePrimary() (ast.Expr, *runtime.Error) {
 }
 
 func (p *Parser) parseImportStatement() (ast.Stmt, *runtime.Error) {
-	p.consume() // 'import'
+	p.consume() // import ->
 	strTok, err := p.expect(lexer.String, "Expected string path after 'import'")
 	if err != nil {
 		return nil, err
@@ -434,7 +434,7 @@ func (p *Parser) parseImportStatement() (ast.Stmt, *runtime.Error) {
 }
 
 func (p *Parser) parseFunctionDeclaration() (ast.Stmt, *runtime.Error) {
-	p.consume() // 'funct'
+	p.consume() // funct ->
 	nameTok, err := p.expect(lexer.Identifier, "Expected function name after 'funct'")
 	if err != nil {
 		return nil, err
@@ -472,7 +472,7 @@ func (p *Parser) parseFunctionDeclaration() (ast.Stmt, *runtime.Error) {
 }
 
 func (p *Parser) parseReturnStatement() (ast.Stmt, *runtime.Error) {
-	p.consume() // 'return'
+	p.consume() // return ->
 	value, err := p.parseExpr()
 	if err != nil {
 		return nil, err
@@ -482,7 +482,7 @@ func (p *Parser) parseReturnStatement() (ast.Stmt, *runtime.Error) {
 
 func (p *Parser) parseArrayLiteral() (ast.Expr, *runtime.Error) {
 	elements := []ast.Expr{}
-	// '[' has already been consumed by parsePrimary
+	// [ -> already consumed
 	if p.peek().Type != lexer.CloseBracket {
 		for {
 			expr, err := p.parseExpr()
@@ -508,7 +508,7 @@ func (p *Parser) parseArrayLiteral() (ast.Expr, *runtime.Error) {
 
 func (p *Parser) parseMapLiteral() (ast.Expr, *runtime.Error) {
 	properties := []*ast.Property{}
-	// '{' has already been consumed by parsePrimary
+	// { -> already consumed
 	if p.peek().Type != lexer.CloseBrace {
 		for {
 			key, err := p.parseExpr()
@@ -517,11 +517,11 @@ func (p *Parser) parseMapLiteral() (ast.Expr, *runtime.Error) {
 			}
 			_, err = p.expect(lexer.Colon, "Expected ':' after key in map literal")
 			if err != nil {
-				return nil, err
+			return nil, err
 			}
 			value, err := p.parseExpr()
 			if err != nil {
-				return nil, err
+			return nil, err
 			}
 			properties = append(properties, &ast.Property{Key: key, Value: value})
 			if p.peek().Type == lexer.CloseBrace {
@@ -539,5 +539,3 @@ func (p *Parser) parseMapLiteral() (ast.Expr, *runtime.Error) {
 	}
 	return &ast.MapLiteral{Properties: properties}, nil
 }
-
-

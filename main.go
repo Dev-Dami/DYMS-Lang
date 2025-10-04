@@ -22,18 +22,18 @@ func main() {
 		os.Exit(1)
 	}
 
-		tokens := lexer.Tokenize(string(sourceCode))
-			p := parser.New(tokens)
+	tokens := lexer.Tokenize(string(sourceCode))
+	p := parser.New(tokens)
 	program, perr := p.ParseProgram()
 	if perr != nil {
 		fmt.Fprintln(os.Stderr, perr.Error())
 		os.Exit(1)
 	}
 
-	// create a new environment for program
+	// env -> for program
 	env := runtime.GlobalEnv
 
-	// Compile -> VM -> run
+	// compile -> vm -> run
 	compiler := runtime.NewCompiler()
 	entry := compiler.Compile(program)
 	vm := runtime.NewVM(env)
@@ -43,5 +43,3 @@ func main() {
 		os.Exit(1)
 	}
 }
-
-
