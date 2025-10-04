@@ -6,9 +6,7 @@ import (
 	"strings"
 )
 
-// Pretty returns a human-friendly single-line representation of any RuntimeVal.
-// It recursively formats arrays and maps, quotes strings, and stabilizes
-// map key ordering for deterministic output.
+// Pretty formats any RuntimeVal as a single-line string.
 func Pretty(v RuntimeVal) string {
 	if v == nil {
 		return "null"
@@ -17,8 +15,7 @@ func Pretty(v RuntimeVal) string {
 	case *NumberVal:
 		return fmt.Sprintf("%v", t.Value)
 	case *StringVal:
-		// Quote strings for clarity
-		return fmt.Sprintf("\"%s\"", t.Value)
+		return fmt.Sprintf("\"%s\"", t.Value) // quote strings
 	case *BooleanVal:
 		return fmt.Sprintf("%v", t.Value)
 	case Function:
@@ -45,8 +42,7 @@ func Pretty(v RuntimeVal) string {
 	}
 }
 
-// PrettyMultiline returns a multi-line, indented representation suitable for
-// deeply nested arrays and maps. Strings are quoted; map keys are sorted.
+// PrettyMultiline formats RuntimeVal as multi-line with indentation.
 func PrettyMultiline(v RuntimeVal) string {
 	return prettyML(v, 0)
 }
@@ -97,7 +93,6 @@ func prettyML(v RuntimeVal, indent int) string {
 			b.WriteString(strings.Repeat("  ", indent+1))
 			b.WriteString(fmt.Sprintf("\"%s\": ", k))
 			val := t.Properties[k]
-			// If nested composite, recurse on next line with its own indent
 			switch val.(type) {
 			case *ArrayVal, *MapVal:
 				b.WriteString("\n")
@@ -118,15 +113,13 @@ func prettyML(v RuntimeVal, indent int) string {
 	}
 }
 
-// Unescape converts simple escape sequences in plain strings to their
-// corresponding characters. Use this when rendering string content to output.
+// Unescape replaces simple escape sequences with actual chars.
 func Unescape(s string) string {
 	replacer := strings.NewReplacer("\\r\\n", "\r\n", "\\n", "\n", "\\t", "\t", "\\\\", "\\", "\\\"", "\"")
 	return replacer.Replace(s)
 }
 
-// formatValue is kept for compatibility with existing code.
-// It now delegates to Pretty so all outputs are consistent.
+// formatValue kept for backward compatibility; delegates to Pretty.
 func formatValue(v RuntimeVal) string {
 	return Pretty(v)
 }

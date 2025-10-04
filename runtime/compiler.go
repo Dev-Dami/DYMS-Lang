@@ -5,7 +5,7 @@ import (
 )
 
 type functionScope struct {
-	locals     map[string]int // name -> slot
+	locals     map[string]int // variable name to slot index
 	localsMax  int
 	isTopLevel bool
 }
@@ -88,7 +88,7 @@ func (c *Compiler) compileStmt(s ast.Stmt) {
 		// Optimized for range(i, N) compilation
 		slot := c.ensureLocal(n.Identifier.Symbol)
 		
-		// Initialize loop counter to 0 (fast opcode)
+		// Initialize loop counter to 0 
 		c.chunk.emit(OP_LOAD_CONST_0)
 		c.chunk.emit(OP_STORE_LOCAL, slot)
 		
@@ -96,8 +96,8 @@ func (c *Compiler) compileStmt(s ast.Stmt) {
 		c.compileExpr(n.Range)
 		loopStart := len(c.chunk.Code)
 		
-		// Optimized loop condition and increment
-		c.chunk.emit(OP_FOR_LOOP_NEXT, slot) // handles condition check and increment
+		// loop condition and increment
+		c.chunk.emit(OP_FOR_LOOP_NEXT, slot) 
 		jfalse := c.chunk.emit(OP_JUMP_IF_FALSE, -1)
 		
 		// Compile body
@@ -107,12 +107,11 @@ func (c *Compiler) compileStmt(s ast.Stmt) {
 		c.chunk.emit(OP_JUMP, loopStart)
 		c.patch(jfalse, len(c.chunk.Code))
 		
-		// Clean up range value from stack
+		// Clean up (range value) from stack
 		c.chunk.emit(OP_POP)
 	case *ast.FunctionDeclaration:
 		fn := c.compileFunction(n)
 		idx := c.chunk.addConst(fn)
-		// bind to name (store global at top-level or local inside function)
 		if c.scope().isTopLevel {
 			nameIdx := c.chunk.addConst(&StringVal{Value: n.Name})
 			c.chunk.emit(OP_CONST, idx)
@@ -143,16 +142,15 @@ func (c *Compiler) compileBlock(b *ast.BlockStatement) {
 }
 
 func (c *Compiler) compileFunction(fd *ast.FunctionDeclaration) *VMFunction {
-	// New compiler for function body with optimized chunk
+	// compiler for function body with optimized chunk
 	inner := &Compiler{chunk: NewChunk()}
 	inner.pushScope(false)
-	// Reserve locals for params
+	// Reserving locals for params
 	for _, p := range fd.Params {
 		slot := inner.ensureLocal(p)
 		_ = slot
 	}
 	inner.compileBlock(fd.Body)
-	// Ensure function returns null if no explicit return
 	inner.chunk.emit(OP_LOAD_NULL)
 	inner.chunk.emit(OP_RET)
 	return &VMFunction{Name: fd.Name, Arity: len(fd.Params), Chunk: inner.chunk, LocalsMax: inner.scope().localsMax}
@@ -161,7 +159,7 @@ func (c *Compiler) compileFunction(fd *ast.FunctionDeclaration) *VMFunction {
 func (c *Compiler) compileExpr(e ast.Expr) {
 	switch n := e.(type) {
 	case *ast.NumericLiteral:
-		// Use fast opcodes for common constants
+		// Use opcodes for common constants
 		if n.Value == 0 {
 			c.chunk.emit(OP_LOAD_CONST_0)
 		} else if n.Value == 1 {
@@ -172,7 +170,7 @@ func (c *Compiler) compileExpr(e ast.Expr) {
 	case *ast.StringLiteral:
 		c.chunk.emit(OP_CONST, c.chunk.addConst(&StringVal{Value: n.Value}))
 	case *ast.BooleanLiteral:
-		// Use fast opcodes for booleans
+		// Use opcodes for booleans
 		if n.Value {
 			c.chunk.emit(OP_LOAD_TRUE)
 		} else {
@@ -201,11 +199,11 @@ func (c *Compiler) compileExpr(e ast.Expr) {
 		case ">=": c.chunk.emit(OP_CMP_GE)
 		}
 	case *ast.CallExpr:
-		// Check for optimizable math function calls
+		// Checking for optimizable math function calls
 		if c.tryOptimizeMathCall(n) {
 			return
 		}
-		// Default function call
+		// Defaults function call
 		c.compileExpr(n.Callee)
 		for _, a := range n.Args { c.compileExpr(a) }
 		c.chunk.emit(OP_CALL, len(n.Args))
@@ -214,8 +212,6 @@ func (c *Compiler) compileExpr(e ast.Expr) {
 		nameIdx := c.chunk.addConst(&StringVal{Value: n.Property.Symbol})
 		c.chunk.emit(OP_GET_PROP, nameIdx)
 	case *ast.ArrayLiteral:
-		// Not compiled in minimal VM; leave to interpreter if needed later
-		// As a placeholder, push null
 		c.chunk.emit(OP_CONST, c.chunk.addConst(&NullVal{}))
 	case *ast.MapLiteral:
 		c.chunk.emit(OP_CONST, c.chunk.addConst(&NullVal{}))
@@ -238,13 +234,11 @@ func (c *Compiler) patch(jumpPos int, target int) {
 	c.chunk.Code[jumpPos+1] = target
 }
 
-// Try to optimize math function calls to fast opcodes
+// math function calls to fast opcodes
 func (c *Compiler) tryOptimizeMathCall(call *ast.CallExpr) bool {
-	// Check if this is a member expression like math.pow, math.sqrt, etc.
 	if memberExpr, ok := call.Callee.(*ast.MemberExpr); ok {
 		if ident, ok := memberExpr.Object.(*ast.Identifier); ok {
-			// Check if calling functions on a math module
-			if ident.Symbol == "math" || ident.Symbol == "m" { // common aliases
+			if ident.Symbol == "math" || ident.Symbol == "m" {
 				switch memberExpr.Property.Symbol {
 				case "pow":
 					if len(call.Args) == 2 {
@@ -308,15 +302,13 @@ func (c *Compiler) tryOptimizeMathCall(call *ast.CallExpr) bool {
 	return false
 }
 
-// Peephole optimization pass
+// Peephole pass
 func (c *Compiler) optimize() {
 	code := c.chunk.Code
 	for i := 0; i < len(code)-2; i++ {
-		// Optimize: CONST 0, STORE_LOCAL -> LOAD_CONST_0, STORE_LOCAL
 		if OpCode(code[i]) == OP_CONST && code[i+1] < len(c.chunk.Consts) {
 			if num, ok := c.chunk.Consts[code[i+1]].(*NumberVal); ok && num.Value == 0 {
 				code[i] = int(OP_LOAD_CONST_0)
-				// Remove operand by shifting left
 				copy(code[i+1:], code[i+2:])
 				c.chunk.Code = code[:len(code)-1]
 				continue
@@ -339,7 +331,6 @@ func (c *Compiler) optimize() {
 			}
 		}
 		
-		// Optimize: LOAD_LOCAL, CONST 1, ADD, STORE_LOCAL (same slot) -> INCREMENT_LOCAL
 		if i+5 < len(code) && 
 			OpCode(code[i]) == OP_LOAD_LOCAL &&
 			OpCode(code[i+2]) == OP_CONST &&
@@ -349,9 +340,8 @@ func (c *Compiler) optimize() {
 			
 			if constIdx := code[i+3]; constIdx < len(c.chunk.Consts) {
 				if num, ok := c.chunk.Consts[constIdx].(*NumberVal); ok && num.Value == 1 {
-					// Replace with INCREMENT_LOCAL
+					// Replace with increment opcode
 					code[i] = int(OP_INCREMENT_LOCAL)
-					// Remove the 5 following instructions
 					copy(code[i+2:], code[i+7:])
 					c.chunk.Code = code[:len(code)-5]
 				}

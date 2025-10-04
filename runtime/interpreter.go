@@ -1,14 +1,14 @@
 package runtime
 
 import (
-	"fmt"
 	"DYMS/ast"
+	"fmt"
 	"log"
 	"math"
 	"time"
 )
 
-// Function represents a built-in function in the language.
+// Function represents built-in function.
 type Function func(args ...RuntimeVal) (RuntimeVal, *Error)
 
 func (f Function) Type() ValueType { return FunctionType }
@@ -19,9 +19,8 @@ var GlobalEnv = NewEnvironment(nil)
 func init() {
 	log.SetFlags(0)
 
-	// Built-in modules registry
 	m := builtinModules()
-	// Expose a simple modules map under "__modules__" if needed later
+	// to expose a modules map under "__modules__"
 	_ = m
 
 	GlobalEnv.DeclareVar("systemout", Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
@@ -49,13 +48,12 @@ GlobalEnv.DeclareVar("println", Function(func(args ...RuntimeVal) (RuntimeVal, *
 					if f, isFloat := arg.(*NumberVal); isFloat {
 						values = append(values, int(f.Value))
 					} else if s, isStr := arg.(*StringVal); isStr {
-						// Pass raw string content to respect formatting and newlines
 						values = append(values, s.Value)
 					} else {
 						values = append(values, Pretty(arg))
 					}
 				}
-// Interpret basic escapes in the format string
+// interpret basic escapes in the format string
 				fmtStr := Unescape(format.Value)
 				fmt.Printf(fmtStr, values...)
 			} else {
@@ -71,7 +69,7 @@ GlobalEnv.DeclareVar("println", Function(func(args ...RuntimeVal) (RuntimeVal, *
 		return nil, nil
 	}), true)
 
-	// pretty(value): returns single-line pretty string
+	// pretty(value)
 	GlobalEnv.DeclareVar("pretty", Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
 		if len(args) < 1 {
 			return &StringVal{Value: ""}, nil
@@ -79,7 +77,7 @@ GlobalEnv.DeclareVar("println", Function(func(args ...RuntimeVal) (RuntimeVal, *
 		return &StringVal{Value: Pretty(args[0])}, nil
 	}), true)
 
-	// prettyml(value): returns multi-line pretty string
+	// prettyml(value)
 	GlobalEnv.DeclareVar("prettyml", Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
 		if len(args) < 1 {
 			return &StringVal{Value: ""}, nil
@@ -87,7 +85,7 @@ GlobalEnv.DeclareVar("println", Function(func(args ...RuntimeVal) (RuntimeVal, *
 		return &StringVal{Value: PrettyMultiline(args[0])}, nil
 	}), true)
 
-	// printlnml(value): print multi-line pretty string with trailing newline
+	// printlnml(value)
 	GlobalEnv.DeclareVar("printlnml", Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
 		if len(args) < 1 {
 			fmt.Println()
@@ -326,7 +324,7 @@ func evalBinaryExpr(expr *ast.BinaryExpr, scope *Environment) (RuntimeVal, *Erro
 		return nil, err
 	}
 
-	// Handle numeric operations
+	// handling numeric operations
 	if leftNum, okLeft := leftVal.(*NumberVal); okLeft {
 		if rightNum, okRight := rightVal.(*NumberVal); okRight {
 			switch expr.Operator {
@@ -357,7 +355,7 @@ func evalBinaryExpr(expr *ast.BinaryExpr, scope *Environment) (RuntimeVal, *Erro
 		}
 	}
 
-	// Handle logical operations
+	// handling logical operations
 	if leftBool, okLeft := leftVal.(*BooleanVal); okLeft {
 		if rightBool, okRight := rightVal.(*BooleanVal); okRight {
 			switch expr.Operator {
@@ -369,9 +367,8 @@ func evalBinaryExpr(expr *ast.BinaryExpr, scope *Environment) (RuntimeVal, *Erro
 		}
 	}
 
-	// Handle string operations
+	// handling string operations
 	if leftStr, okLeft := leftVal.(*StringVal); okLeft {
-		// If right is string and operator is + or comparison
 		switch r := rightVal.(type) {
 		case *StringVal:
 			switch expr.Operator {
@@ -391,7 +388,7 @@ func evalBinaryExpr(expr *ast.BinaryExpr, scope *Environment) (RuntimeVal, *Erro
 		}
 	}
 
-	// Handle boolean equality
+	// handling boolean equality
 	if leftBool, okLeft := leftVal.(*BooleanVal); okLeft {
 		if rightBool, okRight := rightVal.(*BooleanVal); okRight {
 			switch expr.Operator {
@@ -422,7 +419,7 @@ func isTruthy(val RuntimeVal) bool {
 	return true
 }
 
-// Module system
+// Module-system
 func builtinModules() map[string]*MapVal {
 	mods := map[string]*MapVal{}
 	
@@ -444,10 +441,10 @@ func builtinModules() map[string]*MapVal {
 	})
 	mods["time"] = timeMod
 	
-	// fmaths module - advanced mathematical functions  
+	// fmaths module = advanced mathematical functions  
 	fmathsMod := &MapVal{Properties: map[string]RuntimeVal{}}
 	
-	// Basic powers and roots
+	// basic powers and roots
 	fmathsMod.Properties["pow"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
 		if len(args) < 2 {
 			return nil, NewError("pow requires 2 arguments", 0, 0)
@@ -474,7 +471,7 @@ func builtinModules() map[string]*MapVal {
 		return &NumberVal{Value: math.Sqrt(x.Value)}, nil
 	})
 	
-	// Trigonometric functions
+	// trig functions
 	fmathsMod.Properties["sin"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
 		if len(args) < 1 {
 			return nil, NewError("sin requires 1 argument", 0, 0)
@@ -497,7 +494,7 @@ func builtinModules() map[string]*MapVal {
 		return &NumberVal{Value: math.Cos(x.Value)}, nil
 	})
 	
-	// Logarithmic functions  
+	// Logs functions  
 	fmathsMod.Properties["log"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
 		if len(args) < 1 {
 			return nil, NewError("log requires 1 argument", 0, 0)
@@ -512,7 +509,7 @@ func builtinModules() map[string]*MapVal {
 		return &NumberVal{Value: math.Log(x.Value)}, nil
 	})
 	
-	// Exponential functions
+	// Expon functions
 	fmathsMod.Properties["exp"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
 		if len(args) < 1 {
 			return nil, NewError("exp requires 1 argument", 0, 0)
@@ -524,7 +521,7 @@ func builtinModules() map[string]*MapVal {
 		return &NumberVal{Value: math.Exp(x.Value)}, nil
 	})
 	
-	// Utility functions
+	// Util functions
 	fmathsMod.Properties["abs"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
 		if len(args) < 1 {
 			return nil, NewError("abs requires 1 argument", 0, 0)
@@ -558,7 +555,7 @@ func builtinModules() map[string]*MapVal {
 		return &NumberVal{Value: math.Ceil(x.Value)}, nil
 	})
 	
-	// Additional math functions
+	// additional math functions
 	fmathsMod.Properties["tan"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
 		if len(args) < 1 {
 			return nil, NewError("tan requires 1 argument", 0, 0)
@@ -659,7 +656,6 @@ func evalImport(imp *ast.ImportStatement, scope *Environment) (RuntimeVal, *Erro
 	if !ok {
 		return nil, NewError(fmt.Sprintf("unknown module: %s", imp.Path), 0, 0)
 	}
-	// Bind alias as constant
 	scope.DeclareVar(imp.Alias, mod, true)
 	return mod, nil
 }

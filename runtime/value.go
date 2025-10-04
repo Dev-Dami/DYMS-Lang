@@ -5,12 +5,12 @@ import "fmt"
 type ValueType string
 
 const (
-	NumberType  ValueType = "Number"
-	StringType  ValueType = "String"
-	BooleanType ValueType = "Boolean"
-	ArrayType   ValueType = "Array"
-	MapType     ValueType = "Map"
-	NullType    ValueType = "Null"
+	NumberType   ValueType = "Number"
+	StringType   ValueType = "String"
+	BooleanType  ValueType = "Boolean"
+	ArrayType    ValueType = "Array"
+	MapType      ValueType = "Map"
+	NullType     ValueType = "Null"
 	FunctionType ValueType = "Function"
 	ReturnType   ValueType = "Return"
 )
@@ -41,7 +41,6 @@ type BooleanVal struct {
 func (b *BooleanVal) Type() ValueType { return BooleanType }
 func (b *BooleanVal) String() string  { return fmt.Sprintf("%v", b.Value) }
 
-
 type ArrayVal struct {
 	Elements []RuntimeVal
 }
@@ -54,7 +53,7 @@ type MapVal struct {
 }
 
 func (m *MapVal) Type() ValueType { return MapType }
-func (m *MapVal) String() string  { return "{...Map}" }
+func (m *MapVal) String() string  { return "{...Map}" } 
 
 type NullVal struct {
 	Value interface{}
@@ -63,17 +62,17 @@ type NullVal struct {
 func (n *NullVal) Type() ValueType { return NullType }
 func (n *NullVal) String() string  { return "null" }
 
-// User-defined function value
+// User-defined function
 type UserFunction struct {
 	Params []string
-	Body   interface{} // *ast.BlockStatement (kept untyped here to avoid import cycle)
+	Body   interface{} // kept generic to avoid import cycle
 	Env    *Environment
 }
 
 func (u *UserFunction) Type() ValueType { return FunctionType }
 func (u *UserFunction) String() string  { return "[function]" }
 
-// VM-compiled function value
+// VM-compiled function
 type VMFunction struct {
 	Name      string
 	Arity     int
@@ -84,7 +83,7 @@ type VMFunction struct {
 func (v *VMFunction) Type() ValueType { return FunctionType }
 func (v *VMFunction) String() string  { return "[function]" }
 
-// Return value wrapper used to unwind up to call site
+// Return wrapper for call site unwinding
 type ReturnVal struct {
 	Inner RuntimeVal
 }
