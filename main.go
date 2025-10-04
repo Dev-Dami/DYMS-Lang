@@ -7,15 +7,25 @@ import (
 	"DYMS/runtime"
 	"io/ioutil"
 	"os"
+	"path/filepath"
+	"strings"
 )
 
 func main() {
 	if len(os.Args) < 2 {
-		fmt.Println("Usage: hg <filename>")
+		fmt.Println("Usage: dyms <filename.dy>")
 		os.Exit(1)
 	}
 
 	filename := os.Args[1]
+	
+	// Check file extension
+	ext := strings.ToLower(filepath.Ext(filename))
+	if ext != ".dy" && ext != ".dx" {
+		fmt.Fprintf(os.Stderr, "Error: Only .dy and .dx files are supported (got %s)\n", ext)
+		os.Exit(1)
+	}
+	
 	sourceCode, readErr := ioutil.ReadFile(filename)
 	if readErr != nil {
 		fmt.Fprintf(os.Stderr, "Error reading file: %v\n", readErr)

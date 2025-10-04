@@ -76,7 +76,7 @@
 ### Run a script
 
 ```powershell
-go run . test.hg
+go run . test.dy
 ```
 
 ### Build and run as binary
@@ -84,11 +84,11 @@ go run . test.hg
 ```powershell
 # Using build script (Windows)
 .\build.bat build
-.\build\dyms.exe test\01_basic_features.hg
+.\build\dyms.exe test\01_basic_features.dy
 
 # Manual build
 go build -o dyms.exe .
-.\dyms.exe test\01_basic_features.hg
+.\dyms.exe test\01_basic_features.dy
 ```
 
 ---
@@ -103,11 +103,11 @@ dyms <filename>
 
 ```powershell
 # Run directly with Go
-go run . test/01_basic_features.hg
+go run . test/01_basic_features.dy
 
 # Build and run
 .\build.bat build
-.\build\dyms.exe test/21_simple_test.hg
+.\build\dyms.exe test/21_simple_test.dy
 
 # Run all tests
 .\build.bat test
@@ -249,7 +249,7 @@ println("max(5, 3) = " + math.max(5, 3))   // 5
 - **Core**: lexer, parser, AST
 - **Runtime**: compiler, VM, interpreter, value system, environment, error handling, pretty printing
 - **Libraries**: Built-in modules like `time`
-- **Tests / Demos**: Comprehensive `.hg` scripts demonstrating all features
+- **Tests / Demos**: Comprehensive `.dy` scripts demonstrating all features
 
 ---
 
@@ -265,18 +265,19 @@ println("max(5, 3) = " + math.max(5, 3))   // 5
 
 All test files are organized in the `test/` directory for easy access:
 
-- **Basic Features**: `go run . test/01_basic_features.hg`
-- **Type System**: `go run . test/02_types_demo.hg`
-- **Performance Tests**: `go run . test/03_performance_basic.hg`
-- **VM Optimizations**: `go run . test/04_vm_optimization_benchmark.hg`
-- **Bytecode Speed**: `go run . test/05_fast_bytecode_test.hg`
-- **Time Module**: `go run . test/06_time_module.hg`
-- **Time & Math Demo**: `go run . test/07_time_math_demo.hg`
-- **Algorithm Patterns**: `go run . test/08_algorithm_patterns.hg`
-- **Map Operations**: `go run . test/09_map_operations.hg`
-- **Basic Math**: `go run . test/10_math_basic.hg`
-- **Math Optimization**: `go run . test/11_math_optimization.hg`
-- **Comprehensive Math Benchmark**: `go run . test/12_math_comprehensive_benchmark.hg`
+- **Basic Features**: `go run . test/01_basic_features.dy`
+- **Type System**: `go run . test/02_types_demo.dy`
+- **Performance Tests**: `go run . test/03_performance_basic.dy`
+- **VM Optimizations**: `go run . test/04_vm_optimization_benchmark.dy`
+- **Bytecode Speed**: `go run . test/05_fast_bytecode_test.dy`
+- **Time Module**: `go run . test/06_time_module.dy`
+- **Time & Math Demo**: `go run . test/07_time_math_demo.dy`
+- **Algorithm Patterns**: `go run . test/08_algorithm_patterns.dy`
+- **Map Operations**: `go run . test/09_map_operations.dy`
+- **Basic Math**: `go run . test/10_math_basic.dy`
+- **Math Optimization**: `go run . test/11_math_optimization.dy`
+- **Comprehensive Math Benchmark**: `go run . test/12_math_comprehensive_benchmark.dy`
+- **New Language Features**: `go run . test/21_simple_test.dy`
 
 ---
 
@@ -306,6 +307,8 @@ All test files are organized in the `test/` directory for easy access:
 - Expanded standard library with advanced `fmaths` module
 - Modulo operator (`%`) support
 - Enhanced identifier support (underscores allowed)
+- **Function expressions**: Anonymous functions and lambda support
+- **File extension change**: Now uses `.dy` and `.dx` extensions
 
 ### Future Enhancements
 

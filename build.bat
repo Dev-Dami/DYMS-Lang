@@ -42,24 +42,24 @@ goto end
 call :build
 echo Running tests...
 echo Running basic features test:
-%BINARY_PATH% test\01_basic_features.hg
+%BINARY_PATH% test\01_basic_features.dy
 echo.
 echo Running math comprehensive benchmark:
-%BINARY_PATH% test\12_math_comprehensive_benchmark.hg
+%BINARY_PATH% test\12_math_comprehensive_benchmark.dy
 echo.
 echo Running sub-150ms performance test:
-%BINARY_PATH% test\19_sub150_test.hg
+%BINARY_PATH% test\19_sub150_test.dy
 echo.
 echo Running fast loop test:
-%BINARY_PATH% test\18_fast_loop_test.hg
+%BINARY_PATH% test\18_fast_loop_test.dy
 echo.
 echo Running new features test:
 echo   - Break/Continue test:
-%BINARY_PATH% test\21_simple_test.hg
+%BINARY_PATH% test\21_simple_test.dy
 echo   - Increment/Decrement test:
-%BINARY_PATH% test\22_inc_dec_test.hg
+%BINARY_PATH% test\22_inc_dec_test.dy
 echo   - Try/Catch test:
-%BINARY_PATH% test\23_try_catch_test.hg
+%BINARY_PATH% test\23_try_catch_test.dy
 goto end
 
 :deps
