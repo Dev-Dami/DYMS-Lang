@@ -2,7 +2,7 @@
 
 **DYMS** is a lightweight, embeddable interpreter for a dynamic scripting language, implemented in Go. It emphasizes simplicity, extensibility, and seamless integration.
 
-**Status:** Demo 0.4
+**Status:** Demo 0.5
 **License:** [MIT](./LICENSE)
 **Requirements:** Go ≥ 1.24
 
@@ -36,6 +36,7 @@
 - **Module System**:
   - Import modules with aliasing: `import "module" as alias`
   - Built-in `time` library: `now()`, `millis()`, `sleep()`
+  - Built-in `fmaths` library: Advanced mathematical functions and constants
 
 - **Operators**:
   - Arithmetic: `+`, `-`, `*`, `/` (handles division by zero)
@@ -139,6 +140,7 @@ funct makeCounter() {
 
 ```hg
 import "time" as t
+import "fmaths" as math
 
 let t0 = t.now()
 let start = t.millis()
@@ -148,6 +150,39 @@ for range(i, 1000000) {}
 let t1 = t.now()
 println("Elapsed: " + (t1 - t0) + " seconds")
 t.sleep(1.5)
+```
+
+### Math Library
+
+```hg
+import "fmaths" as math
+
+// Mathematical constants
+println("π = " + math.pi())
+println("e = " + math.e())
+
+// Basic functions
+println("sqrt(16) = " + math.sqrt(16))     // 4
+println("pow(2, 8) = " + math.pow(2, 8))  // 256
+println("abs(-42) = " + math.abs(-42))    // 42
+
+// Trigonometric functions
+println("sin(π/2) = " + math.sin(math.pi() / 2))  // 1
+println("cos(0) = " + math.cos(0))               // 1
+println("tan(π/4) = " + math.tan(math.pi() / 4)) // 1
+
+// Logarithmic and exponential
+println("log(e) = " + math.log(math.e()))  // 1
+println("log10(100) = " + math.log10(100)) // 2
+println("log2(8) = " + math.log2(8))       // 3
+println("exp(1) = " + math.exp(1))         // e
+
+// Rounding and utility functions
+println("ceil(3.2) = " + math.ceil(3.2))   // 4
+println("floor(3.8) = " + math.floor(3.8)) // 3
+println("round(3.6) = " + math.round(3.6)) // 4
+println("min(5, 3) = " + math.min(5, 3))   // 3
+println("max(5, 3) = " + math.max(5, 3))   // 5
 ```
 
 ---

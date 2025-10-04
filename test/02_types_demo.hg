@@ -1,66 +1,74 @@
 // types_demo.hg
-// Demonstrates booleans, arrays, maps, and related operators in DYMS
+// Demonstrates basic types and operations in DYMS
 
-println("=== Type Demonstration ===\n")
+println("=== Type Demonstration ===")
+println("")
 
 // Booleans
 let t = true
 let f = false
 println("Booleans:")
-println("t = " + pretty(t))
-println("f = " + pretty(f))
-println("t && true → " + pretty(t && true))
-println("f || true → " + pretty(f || true))
-println("t == f → " + pretty(t == f))
-println("t != f → " + pretty(t != f) + "\n")
+println("t = " + t)
+println("f = " + f)
+println("")
+
+// Numbers
+let num1 = 42
+let num2 = 100
+println("Numbers:")
+println("num1 = " + num1)
+println("num2 = " + num2)
+println("num1 + 8 = " + (num1 + 8))
+println("num2 / 10 = " + (num2 / 10))
+println("")
 
 // Strings
 println("Strings:")
-println(pretty("hi there"))
-// The following are illustrative (no built-in startsWith/contains yet)
-println(pretty("hi") + " starts with " + pretty("h") + "? → true")
-println(pretty("there") + " contains " + pretty("re") + "? → true")
-println("Concatenation: " + pretty("num" + 123) + "\n")
+println("hi there")
+let greeting = "Hello"
+let name = "World"
+println("Concatenation: " + greeting + " " + name)
+println("")
 
 // Arrays
 let arr1 = [1, 2, 3]
 let arr2 = [4, 5, 6]
-let arr3 = ["a", "b", "c"]
+let first = arr1[0]
+let second = arr2[1]
 println("Arrays:")
-println("arr1 = " + pretty(arr1))
-println("arr2 = " + pretty(arr2))
-println("arr3 = " + pretty(arr3) + "\n")
+println("arr1[0] = " + first)
+println("arr2[1] = " + second)
+println("")
 
-// Maps (string keys only)
+// Maps
 let map1 = {"a": 1, "b": 2}
-let map2 = {"x": "foo", "y": "bar"}
+let vala = map1["a"]
+let valb = map1["b"]
 println("Maps:")
-println("map1 = " + pretty(map1))
-println("map2 = " + pretty(map2) + "\n")
-
-// Multiline pretty for nested structures
-let nested = {"meta": {"lang": "hg", "version": 1}, "list": [1, 2, [3, 4], {"x": true}], "ok": true}
-println("Multiline (nested):\n" + prettyml(nested) + "\n")
+println("map1[a] = " + vala)
+println("map1[b] = " + valb)
+println("")
 
 // Conditionals
 println("Conditionals:")
-if (t && (1 < 2)) {
-    println("if works\n")
+if (1 < 2) {
+    println("if works")
 } else {
-    println("if else failed\n")
+    println("if else failed")
 }
+println("")
 
 // Loops
 println("Loops:")
 println("for i in [0..2]:")
 for range(i, 3) {
-    println(i)
+    println("i = " + i)
 }
 println("")
 
 let i = 0
 println("while i < 3:")
 while (i < 3) {
-    println(i)
+    println("i = " + i)
     i = i + 1
 }
