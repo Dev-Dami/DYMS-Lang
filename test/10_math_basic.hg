@@ -1,0 +1,34 @@
+// simple_math_test.hg
+// Simple test for fmaths library
+
+println("=== Simple Math Library Test ===")
+
+import "fmaths" as math
+
+// Test basic functions
+let x = 16
+let y = 2
+
+println("Testing basic functions:")
+let powResult = math.pow(x, y)
+println("pow(16, 2) = " + powResult)
+
+let sqrtResult = math.sqrt(x)
+println("sqrt(16) = " + sqrtResult)
+
+let absResult = math.abs(5)
+println("abs(5) = " + absResult)
+
+// Test constants
+println("\nTesting constants:")
+println("π = " + math.pi)
+println("e = " + math.e)
+
+// Test trigonometry
+println("\nTesting trigonometry:")
+let sinResult = math.sin(0)
+let cosResult = math.cos(0)
+println("sin(0) = " + sinResult)
+println("cos(0) = " + cosResult)
+
+println("\nSimple math test complete!")

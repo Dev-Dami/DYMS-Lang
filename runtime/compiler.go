@@ -201,7 +201,11 @@ func (c *Compiler) compileExpr(e ast.Expr) {
 		case ">=": c.chunk.emit(OP_CMP_GE)
 		}
 	case *ast.CallExpr:
-		// callee then args
+		// Check for optimizable math function calls
+		if c.tryOptimizeMathCall(n) {
+			return
+		}
+		// Default function call
 		c.compileExpr(n.Callee)
 		for _, a := range n.Args { c.compileExpr(a) }
 		c.chunk.emit(OP_CALL, len(n.Args))
@@ -232,6 +236,76 @@ func (c *Compiler) ensureLocal(name string) int {
 func (c *Compiler) patch(jumpPos int, target int) {
 	// jumpPos points to the opcode; operand is at jumpPos+1
 	c.chunk.Code[jumpPos+1] = target
+}
+
+// Try to optimize math function calls to fast opcodes
+func (c *Compiler) tryOptimizeMathCall(call *ast.CallExpr) bool {
+	// Check if this is a member expression like math.pow, math.sqrt, etc.
+	if memberExpr, ok := call.Callee.(*ast.MemberExpr); ok {
+		if ident, ok := memberExpr.Object.(*ast.Identifier); ok {
+			// Check if calling functions on a math module
+			if ident.Symbol == "math" || ident.Symbol == "m" { // common aliases
+				switch memberExpr.Property.Symbol {
+				case "pow":
+					if len(call.Args) == 2 {
+						c.compileExpr(call.Args[0]) // base
+						c.compileExpr(call.Args[1]) // exponent
+						c.chunk.emit(OP_POW)
+						return true
+					}
+				case "sqrt":
+					if len(call.Args) == 1 {
+						c.compileExpr(call.Args[0])
+						c.chunk.emit(OP_SQRT)
+						return true
+					}
+				case "sin":
+					if len(call.Args) == 1 {
+						c.compileExpr(call.Args[0])
+						c.chunk.emit(OP_SIN)
+						return true
+					}
+				case "cos":
+					if len(call.Args) == 1 {
+						c.compileExpr(call.Args[0])
+						c.chunk.emit(OP_COS)
+						return true
+					}
+				case "log":
+					if len(call.Args) == 1 {
+						c.compileExpr(call.Args[0])
+						c.chunk.emit(OP_LOG)
+						return true
+					}
+				case "exp":
+					if len(call.Args) == 1 {
+						c.compileExpr(call.Args[0])
+						c.chunk.emit(OP_EXP)
+						return true
+					}
+				case "abs":
+					if len(call.Args) == 1 {
+						c.compileExpr(call.Args[0])
+						c.chunk.emit(OP_ABS)
+						return true
+					}
+				case "floor":
+					if len(call.Args) == 1 {
+						c.compileExpr(call.Args[0])
+						c.chunk.emit(OP_FLOOR)
+						return true
+					}
+				case "ceil":
+					if len(call.Args) == 1 {
+						c.compileExpr(call.Args[0])
+						c.chunk.emit(OP_CEIL)
+						return true
+					}
+				}
+			}
+		}
+	}
+	return false
 }
 
 // Peephole optimization pass

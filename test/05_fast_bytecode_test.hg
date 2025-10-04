@@ -1,0 +1,25 @@
+// fast_test.hg  
+// Simple test for fast bytecode optimizations
+
+println("Testing fast bytecode optimizations...")
+
+// Test fast constants
+let zero = 0    // Should use OP_LOAD_CONST_0
+let one = 1     // Should use OP_LOAD_CONST_1  
+let t = true    // Should use OP_LOAD_TRUE
+let f = false   // Should use OP_LOAD_FALSE
+
+println("Constants: " + zero + ", " + one + ", " + t + ", " + f)
+
+// Test optimized loop
+let sum = 0
+for range(i, 10) {
+    sum = sum + 1
+}
+println("Sum: " + sum)
+
+// Test basic operations
+let result = zero + one
+println("0 + 1 = " + result)
+
+println("Fast bytecode test complete!")

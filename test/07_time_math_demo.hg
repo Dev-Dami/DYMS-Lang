@@ -1,0 +1,21 @@
+import "time" as t
+
+let y = 2
+let x = 3
+
+let i = 0
+
+for range(i, 8) {
+    i = i + 1
+    println(i)
+}
+
+let t0 = t.now()
+for range(i, 100000) {
+}
+let t1 = t.now()
+
+println("Elapsed sec = " + (t1 - t0))
+
+
+

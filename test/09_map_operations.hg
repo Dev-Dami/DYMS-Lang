@@ -1,0 +1,16 @@
+let t = true
+let f = false
+
+// Conditionals
+printf("Conditionals:\n")
+if (f && (1 < 2)) {
+    printf("if works\n\n")
+} else {
+    printf("if else failed\n\n")
+}
+
+let map1 = {"a": 1, "b": 2}
+let map2 = {"x": "foo", "y": "bar"}
+printf("Maps:\n")
+printf("map1 = %s\n", pretty(map1))
+printf("map2 = %s\n\n", pretty(map2))

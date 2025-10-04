@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"DYMS/ast"
 	"log"
+	"math"
 	"time"
 )
 
@@ -424,6 +425,7 @@ func isTruthy(val RuntimeVal) bool {
 // Module system
 func builtinModules() map[string]*MapVal {
 	mods := map[string]*MapVal{}
+	
 	// time module
 	timeMod := &MapVal{Properties: map[string]RuntimeVal{}}
 	timeMod.Properties["now"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
@@ -441,6 +443,213 @@ func builtinModules() map[string]*MapVal {
 		return &NumberVal{Value: float64(ns)}, nil
 	})
 	mods["time"] = timeMod
+	
+	// fmaths module - advanced mathematical functions  
+	fmathsMod := &MapVal{Properties: map[string]RuntimeVal{}}
+	
+	// Basic powers and roots
+	fmathsMod.Properties["pow"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 2 {
+			return nil, NewError("pow requires 2 arguments", 0, 0)
+		}
+		x, ok1 := args[0].(*NumberVal)
+		y, ok2 := args[1].(*NumberVal)
+		if !ok1 || !ok2 {
+			return nil, NewError("pow requires numeric arguments", 0, 0)
+		}
+		return &NumberVal{Value: math.Pow(x.Value, y.Value)}, nil
+	})
+	
+	fmathsMod.Properties["sqrt"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 1 {
+			return nil, NewError("sqrt requires 1 argument", 0, 0)
+		}
+		x, ok := args[0].(*NumberVal)
+		if !ok {
+			return nil, NewError("sqrt requires numeric argument", 0, 0)
+		}
+		if x.Value < 0 {
+			return nil, NewError("sqrt of negative number", 0, 0)
+		}
+		return &NumberVal{Value: math.Sqrt(x.Value)}, nil
+	})
+	
+	// Trigonometric functions
+	fmathsMod.Properties["sin"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 1 {
+			return nil, NewError("sin requires 1 argument", 0, 0)
+		}
+		x, ok := args[0].(*NumberVal)
+		if !ok {
+			return nil, NewError("sin requires numeric argument", 0, 0)
+		}
+		return &NumberVal{Value: math.Sin(x.Value)}, nil
+	})
+	
+	fmathsMod.Properties["cos"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 1 {
+			return nil, NewError("cos requires 1 argument", 0, 0)
+		}
+		x, ok := args[0].(*NumberVal)
+		if !ok {
+			return nil, NewError("cos requires numeric argument", 0, 0)
+		}
+		return &NumberVal{Value: math.Cos(x.Value)}, nil
+	})
+	
+	// Logarithmic functions  
+	fmathsMod.Properties["log"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 1 {
+			return nil, NewError("log requires 1 argument", 0, 0)
+		}
+		x, ok := args[0].(*NumberVal)
+		if !ok {
+			return nil, NewError("log requires numeric argument", 0, 0)
+		}
+		if x.Value <= 0 {
+			return nil, NewError("log of non-positive number", 0, 0)
+		}
+		return &NumberVal{Value: math.Log(x.Value)}, nil
+	})
+	
+	// Exponential functions
+	fmathsMod.Properties["exp"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 1 {
+			return nil, NewError("exp requires 1 argument", 0, 0)
+		}
+		x, ok := args[0].(*NumberVal)
+		if !ok {
+			return nil, NewError("exp requires numeric argument", 0, 0)
+		}
+		return &NumberVal{Value: math.Exp(x.Value)}, nil
+	})
+	
+	// Utility functions
+	fmathsMod.Properties["abs"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 1 {
+			return nil, NewError("abs requires 1 argument", 0, 0)
+		}
+		x, ok := args[0].(*NumberVal)
+		if !ok {
+			return nil, NewError("abs requires numeric argument", 0, 0)
+		}
+		return &NumberVal{Value: math.Abs(x.Value)}, nil
+	})
+	
+	fmathsMod.Properties["floor"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 1 {
+			return nil, NewError("floor requires 1 argument", 0, 0)
+		}
+		x, ok := args[0].(*NumberVal)
+		if !ok {
+			return nil, NewError("floor requires numeric argument", 0, 0)
+		}
+		return &NumberVal{Value: math.Floor(x.Value)}, nil
+	})
+	
+	fmathsMod.Properties["ceil"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 1 {
+			return nil, NewError("ceil requires 1 argument", 0, 0)
+		}
+		x, ok := args[0].(*NumberVal)
+		if !ok {
+			return nil, NewError("ceil requires numeric argument", 0, 0)
+		}
+		return &NumberVal{Value: math.Ceil(x.Value)}, nil
+	})
+	
+	// Additional math functions
+	fmathsMod.Properties["tan"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 1 {
+			return nil, NewError("tan requires 1 argument", 0, 0)
+		}
+		x, ok := args[0].(*NumberVal)
+		if !ok {
+			return nil, NewError("tan requires numeric argument", 0, 0)
+		}
+		return &NumberVal{Value: math.Tan(x.Value)}, nil
+	})
+	
+	fmathsMod.Properties["log10"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 1 {
+			return nil, NewError("log10 requires 1 argument", 0, 0)
+		}
+		x, ok := args[0].(*NumberVal)
+		if !ok {
+			return nil, NewError("log10 requires numeric argument", 0, 0)
+		}
+		if x.Value <= 0 {
+			return nil, NewError("log10 of non-positive number", 0, 0)
+		}
+		return &NumberVal{Value: math.Log10(x.Value)}, nil
+	})
+	
+	fmathsMod.Properties["log2"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 1 {
+			return nil, NewError("log2 requires 1 argument", 0, 0)
+		}
+		x, ok := args[0].(*NumberVal)
+		if !ok {
+			return nil, NewError("log2 requires numeric argument", 0, 0)
+		}
+		if x.Value <= 0 {
+			return nil, NewError("log2 of non-positive number", 0, 0)
+		}
+		return &NumberVal{Value: math.Log2(x.Value)}, nil
+	})
+	
+	fmathsMod.Properties["round"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 1 {
+			return nil, NewError("round requires 1 argument", 0, 0)
+		}
+		x, ok := args[0].(*NumberVal)
+		if !ok {
+			return nil, NewError("round requires numeric argument", 0, 0)
+		}
+		return &NumberVal{Value: math.Round(x.Value)}, nil
+	})
+	
+	fmathsMod.Properties["min"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 2 {
+			return nil, NewError("min requires at least 2 arguments", 0, 0)
+		}
+		minVal := math.Inf(1)
+		for _, arg := range args {
+			if num, ok := arg.(*NumberVal); ok {
+				if num.Value < minVal {
+					minVal = num.Value
+				}
+			} else {
+				return nil, NewError("min requires numeric arguments", 0, 0)
+			}
+		}
+		return &NumberVal{Value: minVal}, nil
+	})
+	
+	fmathsMod.Properties["max"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		if len(args) < 2 {
+			return nil, NewError("max requires at least 2 arguments", 0, 0)
+		}
+		maxVal := math.Inf(-1)
+		for _, arg := range args {
+			if num, ok := arg.(*NumberVal); ok {
+				if num.Value > maxVal {
+					maxVal = num.Value
+				}
+			} else {
+				return nil, NewError("max requires numeric arguments", 0, 0)
+			}
+		}
+		return &NumberVal{Value: maxVal}, nil
+	})
+	
+	// Mathematical constants
+	fmathsMod.Properties["pi"] = &NumberVal{Value: math.Pi}
+	fmathsMod.Properties["e"] = &NumberVal{Value: math.E}
+	fmathsMod.Properties["phi"] = &NumberVal{Value: 1.618033988749894}
+	
+	mods["fmaths"] = fmathsMod
+	
 	return mods
 }
 

@@ -1,0 +1,66 @@
+// types_demo.hg
+// Demonstrates booleans, arrays, maps, and related operators in DYMS
+
+println("=== Type Demonstration ===\n")
+
+// Booleans
+let t = true
+let f = false
+println("Booleans:")
+println("t = " + pretty(t))
+println("f = " + pretty(f))
+println("t && true → " + pretty(t && true))
+println("f || true → " + pretty(f || true))
+println("t == f → " + pretty(t == f))
+println("t != f → " + pretty(t != f) + "\n")
+
+// Strings
+println("Strings:")
+println(pretty("hi there"))
+// The following are illustrative (no built-in startsWith/contains yet)
+println(pretty("hi") + " starts with " + pretty("h") + "? → true")
+println(pretty("there") + " contains " + pretty("re") + "? → true")
+println("Concatenation: " + pretty("num" + 123) + "\n")
+
+// Arrays
+let arr1 = [1, 2, 3]
+let arr2 = [4, 5, 6]
+let arr3 = ["a", "b", "c"]
+println("Arrays:")
+println("arr1 = " + pretty(arr1))
+println("arr2 = " + pretty(arr2))
+println("arr3 = " + pretty(arr3) + "\n")
+
+// Maps (string keys only)
+let map1 = {"a": 1, "b": 2}
+let map2 = {"x": "foo", "y": "bar"}
+println("Maps:")
+println("map1 = " + pretty(map1))
+println("map2 = " + pretty(map2) + "\n")
+
+// Multiline pretty for nested structures
+let nested = {"meta": {"lang": "hg", "version": 1}, "list": [1, 2, [3, 4], {"x": true}], "ok": true}
+println("Multiline (nested):\n" + prettyml(nested) + "\n")
+
+// Conditionals
+println("Conditionals:")
+if (t && (1 < 2)) {
+    println("if works\n")
+} else {
+    println("if else failed\n")
+}
+
+// Loops
+println("Loops:")
+println("for i in [0..2]:")
+for range(i, 3) {
+    println(i)
+}
+println("")
+
+let i = 0
+println("while i < 3:")
+while (i < 3) {
+    println(i)
+    i = i + 1
+}

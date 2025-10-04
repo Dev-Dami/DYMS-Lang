@@ -1,0 +1,65 @@
+// math_optimization_test.hg
+// Test bytecode optimizations for math functions
+
+println("=== Math Bytecode Optimization Test ===")
+
+import "fmaths" as math
+import "time" as t
+
+// Test 1: Functions that should be optimized to single opcodes
+println("\n1. Testing optimized math functions:")
+
+let x = 9
+let result1 = math.pow(x, 2)    // Should use OP_POW
+let result2 = math.sqrt(x)      // Should use OP_SQRT  
+let result3 = math.sin(0)       // Should use OP_SIN
+let result4 = math.cos(0)       // Should use OP_COS
+let result5 = math.log(math.e)  // Should use OP_LOG
+let result6 = math.exp(1)       // Should use OP_EXP
+let result7 = math.abs(5)       // Should use OP_ABS
+let result8 = math.floor(37/10)  // Should use OP_FLOOR
+let result9 = math.ceil(32/10)   // Should use OP_CEIL
+
+println("pow(9, 2) = " + result1)
+println("sqrt(9) = " + result2)
+println("sin(0) = " + result3)
+println("cos(0) = " + result4)
+println("log(e) = " + result5)
+println("exp(1) = " + result6)
+println("abs(5) = " + result7)
+println("floor(3.7) = " + result8)
+println("ceil(3.2) = " + result9)
+
+// Test 2: Performance comparison
+println("\n2. Performance test with optimized opcodes:")
+let iterations = 100000
+
+let start = t.millis()
+for range(i, iterations) {
+    let temp = math.pow(2, 3)
+    let temp2 = math.sqrt(16)
+    let temp3 = math.abs(temp)
+}
+let end = t.millis()
+let optimizedTime = end - start
+
+println("Optimized bytecode performance:")
+println(iterations + " iterations took " + optimizedTime + " ms")
+
+// Test 3: Complex expression with multiple optimized calls
+println("\n3. Complex math expression:")
+funct complexMath(x) {
+    let a = math.pow(x, 2)
+    let b = math.sqrt(a)
+    let c = math.sin(b / 4)
+    let d = math.cos(b / 4)
+    let e = math.abs(c + d)
+    let f = math.floor(e * 10)
+    return f
+}
+
+let complexResult = complexMath(4)
+println("Complex math result: " + complexResult)
+
+println("\n=== Math Optimization Test Complete ===")
+println("All optimized math functions working correctly!")

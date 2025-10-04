@@ -60,6 +60,17 @@ const (
 	OP_NOT               // logical not
 	OP_AND               // logical and (short-circuit)
 	OP_OR                // logical or (short-circuit)
+	
+	// Math operations (fast opcodes)
+	OP_POW               // power operation (x^y)
+	OP_SQRT              // square root
+	OP_SIN               // sine
+	OP_COS               // cosine
+	OP_LOG               // natural logarithm
+	OP_EXP               // exponential (e^x)
+	OP_ABS               // absolute value
+	OP_FLOOR             // floor function
+	OP_CEIL              // ceiling function
 )
 
 // Chunk holds bytecode and a constant pool with optimizations.

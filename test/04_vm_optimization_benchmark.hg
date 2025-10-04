@@ -1,0 +1,80 @@
+// benchmark.hg
+// Advanced performance benchmark for optimized DYMS bytecode
+
+println("=== DYMS Performance Benchmark ===")
+
+import "time" as t
+
+// Test 1: Loop optimization with fast opcodes
+println("Test 1: Optimized Loop Performance")
+let start = t.millis()
+let sum = 0
+for range(i, 1000000) {
+    sum = sum + 1
+}
+let end = t.millis()
+printf("1M loop iterations: %d ms, sum = %d\n", (end - start), sum)
+
+// Test 2: Fast constant loading
+println("\nTest 2: Fast Constant Operations")
+start = t.millis()
+let total = 0
+for range(j, 500000) {
+    let x = 0      // Should use OP_LOAD_CONST_0
+    let y = 1      // Should use OP_LOAD_CONST_1
+    let z = true   // Should use OP_LOAD_TRUE
+    let w = false  // Should use OP_LOAD_FALSE
+    total = total + x + y
+}
+end = t.millis()
+printf("500K constant ops: %d ms, total = %d\n", (end - start), total)
+
+// Test 3: String concatenation performance
+println("\nTest 3: String Operations")
+start = t.millis()
+let str = ""
+for range(k, 10000) {
+    str = str + "x"  // Should use optimized string concat
+}
+end = t.millis()
+printf("10K string concat: %d ms, length = %d\n", (end - start), str)
+
+// Test 4: Nested loop performance
+println("\nTest 4: Nested Loop Optimization")
+start = t.millis()
+let counter = 0
+for range(outer, 1000) {
+    for range(inner, 1000) {
+        counter = counter + 1
+    }
+}
+end = t.millis()
+printf("1M nested operations: %d ms, counter = %d\n", (end - start), counter)
+
+// Test 5: Function call overhead
+println("\nTest 5: Function Performance")
+funct addOne(x) {
+    return x + 1
+}
+
+start = t.millis()
+let result = 0
+for range(call, 100000) {
+    result = addOne(result)
+}
+end = t.millis()
+printf("100K function calls: %d ms, result = %d\n", (end - start), result)
+
+// Test 6: Boolean operations
+println("\nTest 6: Boolean Logic")
+start = t.millis()
+let trueCount = 0
+for range(bool, 1000000) {
+    if (true && (false || true)) {
+        trueCount = trueCount + 1
+    }
+}
+end = t.millis()
+printf("1M boolean ops: %d ms, count = %d\n", (end - start), trueCount)
+
+println("\n=== Benchmark Complete ===")

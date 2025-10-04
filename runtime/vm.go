@@ -2,6 +2,7 @@ package runtime
 
 import (
 	"fmt"
+	"math"
 )
 
 type frame struct {
@@ -334,6 +335,88 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 			// Then increment counter for next iteration
 			vm.stack[fr.base+slot] = &NumberVal{Value: counter.Value + 1}
 		
+		// Fast math operations
+		case OP_POW:
+			y := vm.pop()
+			x := vm.pop()
+			xn, ok1 := x.(*NumberVal)
+			yn, ok2 := y.(*NumberVal)
+			if !ok1 || !ok2 {
+				return nil, NewError("pow requires numeric arguments", 0, 0)
+			}
+			result := math.Pow(xn.Value, yn.Value)
+			vm.push(&NumberVal{Value: result})
+			
+		case OP_SQRT:
+			x := vm.pop()
+			xn, ok := x.(*NumberVal)
+			if !ok {
+				return nil, NewError("sqrt requires numeric argument", 0, 0)
+			}
+			if xn.Value < 0 {
+				return nil, NewError("sqrt of negative number", 0, 0)
+			}
+			vm.push(&NumberVal{Value: math.Sqrt(xn.Value)})
+			
+		case OP_SIN:
+			x := vm.pop()
+			xn, ok := x.(*NumberVal)
+			if !ok {
+				return nil, NewError("sin requires numeric argument", 0, 0)
+			}
+			vm.push(&NumberVal{Value: math.Sin(xn.Value)})
+			
+		case OP_COS:
+			x := vm.pop()
+			xn, ok := x.(*NumberVal)
+			if !ok {
+				return nil, NewError("cos requires numeric argument", 0, 0)
+			}
+			vm.push(&NumberVal{Value: math.Cos(xn.Value)})
+			
+		case OP_LOG:
+			x := vm.pop()
+			xn, ok := x.(*NumberVal)
+			if !ok {
+				return nil, NewError("log requires numeric argument", 0, 0)
+			}
+			if xn.Value <= 0 {
+				return nil, NewError("log of non-positive number", 0, 0)
+			}
+			vm.push(&NumberVal{Value: math.Log(xn.Value)})
+			
+		case OP_EXP:
+			x := vm.pop()
+			xn, ok := x.(*NumberVal)
+			if !ok {
+				return nil, NewError("exp requires numeric argument", 0, 0)
+			}
+			vm.push(&NumberVal{Value: math.Exp(xn.Value)})
+			
+		case OP_ABS:
+			x := vm.pop()
+			xn, ok := x.(*NumberVal)
+			if !ok {
+				return nil, NewError("abs requires numeric argument", 0, 0)
+			}
+			vm.push(&NumberVal{Value: math.Abs(xn.Value)})
+			
+		case OP_FLOOR:
+			x := vm.pop()
+			xn, ok := x.(*NumberVal)
+			if !ok {
+				return nil, NewError("floor requires numeric argument", 0, 0)
+			}
+			vm.push(&NumberVal{Value: math.Floor(xn.Value)})
+			
+		case OP_CEIL:
+			x := vm.pop()
+			xn, ok := x.(*NumberVal)
+			if !ok {
+				return nil, NewError("ceil requires numeric argument", 0, 0)
+			}
+			vm.push(&NumberVal{Value: math.Ceil(xn.Value)})
+		
 		default:
 			return nil, NewError("unknown opcode", 0, 0)
 		}
@@ -383,6 +466,16 @@ func (op OpCode) String() string {
 	case OP_MAKE_ARRAY: return "MAKE_ARRAY"
 	case OP_MAKE_MAP: return "MAKE_MAP"
 	case OP_FOR_LOOP_NEXT: return "FOR_LOOP_NEXT"
+	// Math opcodes
+	case OP_POW: return "POW"
+	case OP_SQRT: return "SQRT"
+	case OP_SIN: return "SIN"
+	case OP_COS: return "COS"
+	case OP_LOG: return "LOG"
+	case OP_EXP: return "EXP"
+	case OP_ABS: return "ABS"
+	case OP_FLOOR: return "FLOOR"
+	case OP_CEIL: return "CEIL"
 	default: return "?"
 	}
 }
