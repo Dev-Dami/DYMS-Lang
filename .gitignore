@@ -10,6 +10,7 @@
 
 # Test binary, built with `go test -c`
 *.test
+test
 
 # Code coverage profiles and other test artifacts
 *.out
@@ -37,3 +38,4 @@ holyc-demo.zip
 holy-c-demo-v2
 dsym-upd-0.3
 WARP.MD
+binaries

@@ -3,3 +3,19 @@ funct add(a, b) {
 }
 
 printf("Sum: %d\n", add(3, 5))
+
+funct greet(name) {
+    return "Hello, " + name + "!"
+}
+
+let message = greet("World")
+println(message)
+
+funct makeCounter() {
+    let count = 0
+    funct increment() {
+        count = count + 1
+        return count
+    }
+    return increment
+}

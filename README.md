@@ -258,11 +258,13 @@ All test files are organized in the `test/` directory for easy access:
 - Advanced pretty printing with stable output
 - Comprehensive error handling with line/column tracking
 
-### In Progress
+### Completed (v0.5)
 
 - Array and map bracket indexing
-- Expanded standard library
+- Expanded standard library with advanced `fmaths` module
 - Improved parser diagnostics
+
+### In Progress
 
 ### Future Enhancements
 
