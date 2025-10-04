@@ -227,14 +227,20 @@ println("max(5, 3) = " + math.max(5, 3))   // 5
 
 ## Demos
 
-- **Full Language Tour**: `go run . types_demo.hg`
-- **Performance Benchmarking**: `go run . speed.hg`
-- **Advanced Benchmark Suite**: `go run . benchmark.hg` — tests VM optimizations
-- **Fast Bytecode Test**: `go run . fast_test.hg` — verifies optimized opcodes
-- **Algorithm Patterns**: `go run . other.hg`
-- **Module System & Timing**: `go run . time_demo.hg`, `go run . math.hg`
-- **Data Structure Operations**: `go run . map.hg`
-- **Basic Features**: `go run . test.hg`
+All test files are organized in the `test/` directory for easy access:
+
+- **Basic Features**: `go run . test/01_basic_features.hg`
+- **Type System**: `go run . test/02_types_demo.hg`
+- **Performance Tests**: `go run . test/03_performance_basic.hg`
+- **VM Optimizations**: `go run . test/04_vm_optimization_benchmark.hg`
+- **Bytecode Speed**: `go run . test/05_fast_bytecode_test.hg`
+- **Time Module**: `go run . test/06_time_module.hg`
+- **Time & Math Demo**: `go run . test/07_time_math_demo.hg`
+- **Algorithm Patterns**: `go run . test/08_algorithm_patterns.hg`
+- **Map Operations**: `go run . test/09_map_operations.hg`
+- **Basic Math**: `go run . test/10_math_basic.hg`
+- **Math Optimization**: `go run . test/11_math_optimization.hg`
+- **Comprehensive Math Benchmark**: `go run . test/12_math_comprehensive_benchmark.hg`
 
 ---
 
