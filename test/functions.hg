@@ -1,0 +1,5 @@
+funct add(a, b) {
+    return a + b
+}
+
+printf("Sum: %d\n", add(3, 5))
