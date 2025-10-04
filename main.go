@@ -30,10 +30,10 @@ func main() {
 		os.Exit(1)
 	}
 
-	// Create a new environment for the program
+	// create a new environment for program
 	env := runtime.GlobalEnv
 
-	// Compile to VM and run
+	// Compile -> VM -> run
 	compiler := runtime.NewCompiler()
 	entry := compiler.Compile(program)
 	vm := runtime.NewVM(env)

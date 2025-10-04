@@ -8,7 +8,7 @@ import (
 type frame struct {
 	fn   *VMFunction
 	ip   int
-	base int // base index in the stack for locals
+	base int // for base index in the stack 
 }
 
 type VM struct {
@@ -19,7 +19,7 @@ type VM struct {
 }
 
 func NewVM(globals *Environment) *VM {
-	// Pre-allocate larger stack for better performance
+	// for pre-allocating larger stack for better performance
 	return &VM{
 		stack:   make([]RuntimeVal, 1024),
 		sp:      0,
@@ -28,10 +28,11 @@ func NewVM(globals *Environment) *VM {
 	}
 }
 
-// Optimized stack operations with bounds checking
+
+// stack operations
 func (vm *VM) push(v RuntimeVal) {
 	if vm.sp >= len(vm.stack) {
-		// Grow stack if needed
+		// for growing stack if needed
 		newStack := make([]RuntimeVal, len(vm.stack)*2)
 		copy(newStack, vm.stack)
 		vm.stack = newStack
@@ -43,15 +44,14 @@ func (vm *VM) push(v RuntimeVal) {
 func (vm *VM) pop() RuntimeVal {
 	vm.sp--
 	v := vm.stack[vm.sp]
-	vm.stack[vm.sp] = nil // Help GC
+	vm.stack[vm.sp] = nil // help GC
 	return v
 }
 
 func (vm *VM) peek() RuntimeVal {
 	return vm.stack[vm.sp-1]
 }
-
-// Fast operations for common constants
+// Fast operations -> common constants
 func (vm *VM) pushConst0() { vm.stack[vm.sp] = &NumberVal{Value: 0}; vm.sp++ }
 func (vm *VM) pushConst1() { vm.stack[vm.sp] = &NumberVal{Value: 1}; vm.sp++ }
 func (vm *VM) pushTrue() { vm.stack[vm.sp] = &BooleanVal{Value: true}; vm.sp++ }
@@ -59,7 +59,7 @@ func (vm *VM) pushFalse() { vm.stack[vm.sp] = &BooleanVal{Value: false}; vm.sp++
 func (vm *VM) pushNull() { vm.stack[vm.sp] = &NullVal{}; vm.sp++ }
 
 func (vm *VM) callFunction(fn *VMFunction, argc int) {
-	// Expect args already pushed; place them above locals (we don't pre-alloc locals)
+	// Expect args already pushed; place them above locals
 	vm.frames = append(vm.frames, frame{fn: fn, ip: 0, base: vm.sp-argc})
 }
 
@@ -193,7 +193,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 				for i := argc - 1; i >= 0; i-- {
 					args[i] = vm.pop()
 				}
-				vm.pop() // pop callee
+				vm.pop() 
 				res, err := f(args...)
 				if err != nil {
 					return nil, err
@@ -242,7 +242,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 			}
 			vm.globals.DeclareVar(alias, mod, true)
 		
-		// Fast opcodes for common constants
+		// fast opcodes common constants
 		case OP_LOAD_CONST_0:
 			vm.pushConst0()
 		case OP_LOAD_CONST_1:
@@ -254,7 +254,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 		case OP_LOAD_NULL:
 			vm.pushNull()
 		
-		// Stack manipulation
+		// stack manipulation
 		case OP_DUP:
 			val := vm.peek()
 			vm.push(val)
@@ -264,7 +264,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 			vm.push(a)
 			vm.push(b)
 		
-		// Optimized local variable operations
+		// local variable operations
 		case OP_INCREMENT_LOCAL:
 			slot := code[fr.ip]
 			fr.ip++
@@ -282,7 +282,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 				return nil, NewError("cannot decrement non-number", 0, 0)
 			}
 		
-		// Optimized string concatenation
+		// string concatenation
 		case OP_CONCAT_2:
 			r := vm.pop()
 			l := vm.pop()
@@ -296,7 +296,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 			}
 			vm.push(&StringVal{Value: result})
 		
-		// Array/Map operations
+		// array and map operations
 		case OP_MAKE_ARRAY:
 			n := code[fr.ip]
 			fr.ip++
@@ -306,7 +306,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 			}
 			vm.push(&ArrayVal{Elements: elements})
 		case OP_MAKE_MAP:
-			n := code[fr.ip] // number of key-value pairs
+			n := code[fr.ip] // num of key-value pairs
 			fr.ip++
 			props := make(map[string]RuntimeVal)
 			for i := 0; i < n; i++ {
@@ -320,22 +320,22 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 			}
 			vm.push(&MapVal{Properties: props})
 		
-		// Optimized for loop
+		// for loop
 		case OP_FOR_LOOP_NEXT:
 			slot := code[fr.ip]
 			fr.ip++
-			// Get counter and limit
+			// for getting the counter and limit
 			counter, ok1 := vm.stack[fr.base+slot].(*NumberVal)
 			limit, ok2 := vm.peek().(*NumberVal)
 			if !ok1 || !ok2 {
 				return nil, NewError("for loop requires numeric values", 0, 0)
 			}
-			// Check condition first (counter < limit)
+			// checking the conditions first (counter < limit)
 			vm.push(&BooleanVal{Value: counter.Value < limit.Value})
-			// Then increment counter for next iteration
+			// then increment counter for next iteration
 			vm.stack[fr.base+slot] = &NumberVal{Value: counter.Value + 1}
 		
-		// Fast math operations
+		// math operations
 		case OP_POW:
 			y := vm.pop()
 			x := vm.pop()
@@ -451,7 +451,7 @@ func (op OpCode) String() string {
 	case OP_POP: return "POP"
 	case OP_GET_PROP: return "GET_PROP"
 	case OP_IMPORT: return "IMPORT"
-	// Fast opcodes
+	// fast-op codes
 	case OP_LOAD_CONST_0: return "LOAD_CONST_0"
 	case OP_LOAD_CONST_1: return "LOAD_CONST_1"
 	case OP_LOAD_TRUE: return "LOAD_TRUE"
@@ -466,7 +466,7 @@ func (op OpCode) String() string {
 	case OP_MAKE_ARRAY: return "MAKE_ARRAY"
 	case OP_MAKE_MAP: return "MAKE_MAP"
 	case OP_FOR_LOOP_NEXT: return "FOR_LOOP_NEXT"
-	// Math opcodes
+	// mathematics opcodes
 	case OP_POW: return "POW"
 	case OP_SQRT: return "SQRT"
 	case OP_SIN: return "SIN"
