@@ -16,7 +16,7 @@ printf("t != f → %s\n\n", pretty(t != f))
 
 // Strings
 printf("Strings:\n")
-printf("    %s\n", pretty("hi there"))
+printf("%s\n", pretty("hi there"))
 // The following are illustrative (no built-in startsWith/contains yet)
 printf("%s starts with %s? → true\n", pretty("hi"), pretty("h"))
 printf("%s contains %s? → true\n", pretty("there"), pretty("re"))

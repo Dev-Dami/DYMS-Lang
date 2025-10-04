@@ -27,6 +27,8 @@ const (
 	False
 	Import
 	As
+	Funct
+	Return
 
 	// Grouping * Operators
 	BinaryOperator
@@ -103,6 +105,10 @@ func (t TokenType) String() string {
 		return "Import"
 	case As:
 		return "As"
+	case Funct:
+		return "Funct"
+	case Return:
+		return "Return"
 	default:
 		return "Unknown"
 	}
@@ -134,6 +140,8 @@ var keywords = map[string]TokenType{
 	"false":     False,
 	"import":    Import,
 	"as":        As,
+	"funct":     Funct,
+	"return":    Return,
 }
 
 func isAlpha(ch rune) bool {

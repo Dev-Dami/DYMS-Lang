@@ -1,9 +1,10 @@
 # DYMS — Dynamic Yet Minimal System Interpreter
 
-**DYMS** is a lightweight, embeddable interpreter for a small dynamically-typed language, written in Go.
-It is designed to be simple, extensible, and easy to integrate.
+**DYMS** is a lightweight, embeddable interpreter for a dynamic scripting language, implemented in Go. It emphasizes simplicity, extensibility, and seamless integration.
 
-**Status:** Demo 0.3 • **License:** [MIT](./LICENSE) • **Requires:** Go ≥ 1.24
+**Status:** Demo 0.4
+**License:** [MIT](./LICENSE)
+**Requirements:** Go ≥ 1.24
 
 ---
 
@@ -24,29 +25,42 @@ It is designed to be simple, extensible, and easy to integrate.
 
 ## Features
 
-- **Variables**: `let`, `var`, `const`
-- **Types**: Number, String, Boolean, Array, Map
-- **Libraries**: Time
+- **Variables**: `let` (immutable by default), `var` (mutable), `const` (immutable with strict enforcement)
+- **Data Types**: Number (float64), String, Boolean, Array (heterogeneous), Map (string keys)
+- **Functions**:
+  - User-defined with `funct name(params) { body }`
+  - Supports closures and lexical environment capture
+  - Return statements: `return value`
+  - Automatic null-padding for missing arguments
+
+- **Module System**:
+  - Import modules with aliasing: `import "module" as alias`
+  - Built-in `time` library: `now()`, `millis()`, `sleep()`
+
 - **Operators**:
-  - Arithmetic: `+`, `-`, `*`, `/`
+  - Arithmetic: `+`, `-`, `*`, `/` (handles division by zero)
   - Comparison: `==`, `!=`, `<`, `<=`, `>`, `>=`
   - Logical: `&&`, `||`
-  - String concatenation with `+`
+  - String concatenation with automatic type conversion
 
-- **Control flow**:
-  - `if/else`
-  - `while`
-  - `for range(i, N)`
+- **Control Flow**:
+  - Conditional: `if/else`
+  - Loops: `while` and `for range(i, N)`
 
-- **Comments**: Single-line with `//`
-- **Built-ins**:
-  - `println`, `systemout`, `logln`
-  - `printf(format, ...)` (supports `\n`, `\t`, `\r\n`)
-  - `pretty(v)` — single-line representation
-  - `prettyml(v)` — multi-line representation
-  - `printlnml(v)` — multi-line pretty print with line break
+- **Advanced Features**:
+  - Dual execution: AST interpretation + bytecode VM
+  - Property access via dot notation for maps
+  - String escaping: `\n`, `\t`, `\r\n`, `\\`, `\"`
+  - Single-line comments: `//`
 
-- **Error reporting**: Includes line and column numbers when available
+- **Built-in Functions**:
+  - I/O: `println`, `printf`, `systemout`, `logln`
+  - Formatting: `pretty(v)`, `prettyml(v)`, `printlnml(v)`
+  - All built-ins support variadic arguments
+
+- **Robust Error Handling**:
+  - Line/column-aware parser and runtime errors
+  - Context-sensitive error reporting
 
 ---
 
@@ -73,7 +87,7 @@ go build -o hg.exe .
 hg <filename>
 ```
 
-**Example**:
+**Example:**
 
 ```powershell
 go run . other.hg
@@ -83,99 +97,143 @@ go run . other.hg
 
 ## Language Overview
 
-```text
+### Core Syntax
+
+```hg
 let x = 10
 var y = 20
 const who = "DYMS"
 let ok = true
-let arr = [1, 2, 3]
-let m = {"name": "DYMS", "stable": ok}
+let arr = [1, 2, 3, "mixed"]
+let m = {"name": "DYMS", "version": 0.3, "stable": ok}
 
 if (x > 5) { println("x > 5") } else { println("x <= 5") }
-
 for range(i, 3) { println(i) }
+while (y > 0) { y = y - 1 }
+println(m.name)
 ```
 
-```libraries
-// time_demo.hg
-// Demonstrates import aliasing and time.now()
+### Functions
 
+```hg
+funct greet(name) {
+    return "Hello, " + name + "!"
+}
+
+let message = greet("World")
+println(message)
+
+funct makeCounter() {
+    let count = 0
+    funct increment() {
+        count = count + 1
+        return count
+    }
+    return increment
+}
+```
+
+### Module System
+
+```hg
 import "time" as t
 
 let t0 = t.now()
-for range(i, 1000000) {
-}
-let t1 = t.now()
+let start = t.millis()
 
-println("Elapsed sec = " + (t1 - t0))
+for range(i, 1000000) {}
+
+let t1 = t.now()
+println("Elapsed: " + (t1 - t0) + " seconds")
+t.sleep(1.5)
 ```
 
 ---
 
-## Architecture (High-Level)
+## Architecture
 
-- **Lexer → Tokens**: [lexer/lexer.go](./lexer/lexer.go)
-- **Parser → AST**: [parser/parser.go](./parser/parser.go)
-- **Runtime / Evaluator → Execution**:
-  - Environments / scopes: [runtime/enviroment.go](./runtime/enviroment.go)
-  - Values: [runtime/value.go](./runtime/value.go)
-  - Interpreter & built-ins: [runtime/interpreter.go](./runtime/interpreter.go)
-  - Pretty printers: [runtime/outputingpritier.go](./runtime/outputingpritier.go)
+### Execution Pipeline
+
+1. **Lexer → Tokens**: [lexer/lexer.go](./lexer/lexer.go)
+2. **Parser → AST**: [parser/parser.go](./parser/parser.go)
+3. **Dual Runtime System**:
+   - AST → Compiler → Bytecode → VM (optimized performance)
+   - AST → Interpreter (flexible evaluation)
+
+### Core Components
+
+- **AST System**: Node definitions, pretty printing, function and import support
+- **VM & Compiler**: Stack-based VM, bytecode compilation, call frames, local variable optimization
+- **Runtime Environment**: Lexical scoping, dynamic value system, interpreter, pretty printing
+- **Error System**: Line/column-aware parser and runtime errors
+- **Module System**: Built-in libraries with aliasing support
 
 ---
 
 ## Project Structure
 
-- **Entry point**: [main.go](./main.go)
-- **Core language**: [lexer/](./lexer), [parser/](./parser), [ast/ast.go](./ast/ast.go)
-- **Runtime**: [runtime/](./runtime)
-- **Examples**: [test.hg](./test.hg), [other.hg](./other.hg), [types_demo.hg](./types_demo.hg)
+- **Entry Point**: [main.go](./main.go)
+- **Core**: lexer, parser, AST
+- **Runtime**: compiler, VM, interpreter, value system, environment, error handling, pretty printing
+- **Libraries**: Built-in modules like `time`
+- **Tests / Demos**: Comprehensive `.hg` scripts demonstrating all features
 
 ---
 
 ## Pretty Printing
 
-- **`pretty(v)`** — inline, quoted strings; arrays and maps in single line
-- **`prettyml(v)`** — multi-line, indented; maps with sorted keys for stability
-- **`printlnml(v)`** — prints `prettyml` with trailing newline
+- `pretty(v)` — inline, single-line formatting
+- `prettyml(v)` — multi-line, indented, stable output with sorted keys
+- `printlnml(v)` — prints `prettyml` output with newline
 
 ---
 
 ## Demos
 
-The recommended demo showcases types, control flow, and pretty printing:
-
-```powershell
-go run . types_demo.hg
-```
+- **Full Language Tour**: `go run . types_demo.hg`
+- **Performance Benchmarking**: `go run . speed.hg`
+- **Algorithm Patterns**: `go run . other.hg`
+- **Module System & Timing**: `go run . time_demo.hg`, `go run . math.hg`
+- **Data Structure Operations**: `go run . map.hg`
+- **Basic Features**: `go run . test.hg`
 
 ---
 
 ## Roadmap
 
-- Array and map indexing / field access
-- Small standard library (strings, collections)
-- Improved parser diagnostics and error recovery
+### Completed
+
+- User-defined functions with closures
+- Bytecode VM with optimized opcodes
+- Enhanced time library
+- Property access via dot notation
+- Advanced pretty printing
+- Robust error handling
+- Performance optimizations
+
+### In Progress
+
+- Array and map bracket indexing
+- Expanded standard library
+- Improved parser diagnostics
+
+### Future Enhancements
+
+- Modulo, increment/decrement operators
+- `break`, `continue`, `switch/case`
+- Exception handling (`try/catch`)
+- File I/O functions
+- Regular expressions
+- Debugging tools
+- User-defined modules
 
 ---
 
 ## Further Reading & Inspiration
 
-DYMS draws inspiration from both academic and practical works on programming language design, interpreters, and compilers. If you want to explore similar topics, here are some recommended resources:
-
-- **Books**:
-  - [Crafting Interpreters](https://craftinginterpreters.com/) by Robert Nystrom — a modern and practical guide to writing interpreters.
-  - [Compilers: Principles, Techniques, and Tools (Dragon Book)](https://en.wikipedia.org/wiki/Compilers:_Principles,_Techniques,_and_Tools) by Aho, Lam, Sethi, and Ullman.
-  - [Programming Languages: Application and Interpretation (PLAI)](http://cs.brown.edu/~sk/Publications/Books/ProgLangs/) by Shriram Krishnamurthi.
-
-- **Projects / Languages**:
-  - [Lua](https://www.lua.org/) — a lightweight embeddable scripting language.
-  - [Wren](https://wren.io/) — a small, fast language by Robert Nystrom, focused on simplicity.
-  - [Go](https://go.dev/) itself — whose minimalism and clarity influenced DYMS.
-
-- **Other Resources**:
-  - [Structure and Interpretation of Computer Programs (SICP)](https://mitpress.mit.edu/9780262510875/structure-and-interpretation-of-computer-programs/) — a foundational text on programming languages and abstractions.
-  - [Awesome Compilers](https://github.com/aalhour/awesome-compilers) — a curated list of compilers, interpreters, and related resources.
+- **Books**: Crafting Interpreters, Dragon Book, PLAI
+- **Languages**: Lua, Wren, Go
+- **Other**: SICP, Awesome Compilers
 
 ---
 

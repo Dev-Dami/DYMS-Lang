@@ -1,11 +1,7 @@
-// time_demo.hg
-// Demonstrates import aliasing and time.now()
-
 import "time" as t
 
-let t0 = t.now()
-for range(i, 1000000) {
-}
-let t1 = t.now()
+let t0 = t.millis()
+for range(i, 2000000) { }
+let t1 = t.millis()
 
-println("Elapsed sec = " + (t1 - t0))
+println("loopTest took " + (t1 - t0) + " ms")

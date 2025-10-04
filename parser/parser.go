@@ -60,6 +60,10 @@ func (p *Parser) parseStmt() (ast.Stmt, *runtime.Error) {
 	switch p.peek().Type {
 	case lexer.Import:
 		return p.parseImportStatement()
+	case lexer.Funct:
+		return p.parseFunctionDeclaration()
+	case lexer.Return:
+		return p.parseReturnStatement()
 	case lexer.Let, lexer.Var, lexer.Const:
 		return p.parseVarDeclaration()
 	case lexer.If:
@@ -427,6 +431,53 @@ func (p *Parser) parseImportStatement() (ast.Stmt, *runtime.Error) {
 		return nil, err
 	}
 	return &ast.ImportStatement{Path: strTok.Value, Alias: aliasTok.Value}, nil
+}
+
+func (p *Parser) parseFunctionDeclaration() (ast.Stmt, *runtime.Error) {
+	p.consume() // 'funct'
+	nameTok, err := p.expect(lexer.Identifier, "Expected function name after 'funct'")
+	if err != nil {
+		return nil, err
+	}
+	_, err = p.expect(lexer.OpenParen, "Expected '(' after function name")
+	if err != nil {
+		return nil, err
+	}
+	params := []string{}
+	if p.peek().Type != lexer.CloseParen {
+		for {
+			paramTok, err := p.expect(lexer.Identifier, "Expected parameter name")
+			if err != nil {
+				return nil, err
+			}
+			params = append(params, paramTok.Value)
+			if p.peek().Type == lexer.CloseParen {
+				break
+			}
+			_, err = p.expect(lexer.Comma, "Expected ',' or ')' in parameter list")
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	_, err = p.expect(lexer.CloseParen, "Expected ')' after parameters")
+	if err != nil {
+		return nil, err
+	}
+	body, err := p.parseBlockStatement()
+	if err != nil {
+		return nil, err
+	}
+	return &ast.FunctionDeclaration{Name: nameTok.Value, Params: params, Body: body}, nil
+}
+
+func (p *Parser) parseReturnStatement() (ast.Stmt, *runtime.Error) {
+	p.consume() // 'return'
+	value, err := p.parseExpr()
+	if err != nil {
+		return nil, err
+	}
+	return &ast.ReturnStatement{Value: value}, nil
 }
 
 func (p *Parser) parseArrayLiteral() (ast.Expr, *runtime.Error) {

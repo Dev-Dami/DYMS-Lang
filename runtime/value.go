@@ -11,6 +11,8 @@ const (
 	ArrayType   ValueType = "Array"
 	MapType     ValueType = "Map"
 	NullType    ValueType = "Null"
+	FunctionType ValueType = "Function"
+	ReturnType   ValueType = "Return"
 )
 
 type RuntimeVal interface {
@@ -60,3 +62,32 @@ type NullVal struct {
 
 func (n *NullVal) Type() ValueType { return NullType }
 func (n *NullVal) String() string  { return "null" }
+
+// User-defined function value
+type UserFunction struct {
+	Params []string
+	Body   interface{} // *ast.BlockStatement (kept untyped here to avoid import cycle)
+	Env    *Environment
+}
+
+func (u *UserFunction) Type() ValueType { return FunctionType }
+func (u *UserFunction) String() string  { return "[function]" }
+
+// VM-compiled function value
+type VMFunction struct {
+	Name      string
+	Arity     int
+	Chunk     *Chunk
+	LocalsMax int
+}
+
+func (v *VMFunction) Type() ValueType { return FunctionType }
+func (v *VMFunction) String() string  { return "[function]" }
+
+// Return value wrapper used to unwind up to call site
+type ReturnVal struct {
+	Inner RuntimeVal
+}
+
+func (r *ReturnVal) Type() ValueType { return ReturnType }
+func (r *ReturnVal) String() string  { return r.Inner.String() }

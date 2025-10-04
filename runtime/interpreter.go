@@ -7,10 +7,10 @@ import (
 	"time"
 )
 
-// Function represents a function in the language.
+// Function represents a built-in function in the language.
 type Function func(args ...RuntimeVal) (RuntimeVal, *Error)
 
-func (f Function) Type() ValueType { return "Function" }
+func (f Function) Type() ValueType { return FunctionType }
 func (f Function) String() string  { return "[function]" }
 
 var GlobalEnv = NewEnvironment(nil)
@@ -132,10 +132,21 @@ func Evaluate(stmt ast.Stmt, scope *Environment) (RuntimeVal, *Error) {
 				return nil, err
 			}
 		}
-		if f, ok := fn.(Function); ok {
+		switch f := fn.(type) {
+		case Function:
 			return f(args...)
-		} else {
-			// No positional info at runtime for this node; surface a clean error
+		case *UserFunction:
+			callEnv := NewEnvironment(f.Env)
+			for idx, name := range f.Params {
+				var val RuntimeVal
+				if idx < len(args) { val = args[idx] } else { val = &NullVal{} }
+				callEnv.DeclareVar(name, val, false)
+			}
+			res, err := evalBlockStatement(f.Body.(*ast.BlockStatement), callEnv)
+			if err != nil { return nil, err }
+			if rv, ok := res.(*ReturnVal); ok { return rv.Inner, nil }
+			return res, nil
+		default:
 			return nil, NewError(fmt.Sprintf("not a function: %T", fn), 0, 0)
 		}
 	case *ast.Identifier:
@@ -158,6 +169,14 @@ func Evaluate(stmt ast.Stmt, scope *Environment) (RuntimeVal, *Error) {
 		return evalAssignmentExpr(s, scope)
 	case *ast.ImportStatement:
 		return evalImport(s, scope)
+	case *ast.FunctionDeclaration:
+		uf := &UserFunction{Params: s.Params, Body: s.Body, Env: scope}
+		scope.DeclareVar(s.Name, uf, true)
+		return uf, nil
+	case *ast.ReturnStatement:
+		val, err := Evaluate(s.Value, scope)
+		if err != nil { return nil, err }
+		return &ReturnVal{Inner: val}, nil
 	default:
 		return nil, NewError(fmt.Sprintf("unknown statement type: %T", s), 0, 0)
 	}
@@ -182,6 +201,9 @@ func evalProgram(program *ast.Program, scope *Environment) (RuntimeVal, *Error) 
 		if err != nil {
 			return nil, err
 		}
+		if _, isRet := lastResult.(*ReturnVal); isRet {
+			return lastResult.(*ReturnVal).Inner, nil
+		}
 	}
 	return lastResult, nil
 }
@@ -194,6 +216,9 @@ func evalBlockStatement(block *ast.BlockStatement, scope *Environment) (RuntimeV
 		lastResult, err = Evaluate(stmt, blockScope)
 		if err != nil {
 			return nil, err
+		}
+		if _, isRet := lastResult.(*ReturnVal); isRet {
+			return lastResult, nil
 		}
 	}
 	return lastResult, nil
@@ -405,6 +430,15 @@ func builtinModules() map[string]*MapVal {
 		ns := time.Now().UnixNano()
 		secs := float64(ns) / 1e9
 		return &NumberVal{Value: secs}, nil
+	})
+	timeMod.Properties["millis"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		ns := time.Now().UnixNano()
+		ms := float64(ns) / 1e6
+		return &NumberVal{Value: ms}, nil
+	})
+	timeMod.Properties["nanos"] = Function(func(args ...RuntimeVal) (RuntimeVal, *Error) {
+		ns := time.Now().UnixNano()
+		return &NumberVal{Value: float64(ns)}, nil
 	})
 	mods["time"] = timeMod
 	return mods
