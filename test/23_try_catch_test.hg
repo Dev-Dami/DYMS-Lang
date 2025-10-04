@@ -1,0 +1,22 @@
+// Test try-catch
+println("=== Try-Catch Test ===")
+
+println("1. Basic try-catch:")
+try {
+    println("In try block")
+    var result = 10 + 5
+    println("Calculation result:", result)
+} catch(e) {
+    println("Caught error:", e)
+}
+
+println("2. Try-catch with error:")
+try {
+    println("About to access undefined variable...")
+    var bad = undefined_var
+    println("This should not print")
+} catch(err) {
+    println("Successfully caught error:", err)
+}
+
+println("=== Test Complete ===")

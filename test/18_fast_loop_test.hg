@@ -1,0 +1,50 @@
+// Fast loop performance test
+import "time" as t
+
+println("Fast Loop Performance Test")
+println("===========================")
+
+// Test 1: Empty loop performance
+println("Testing empty loops:")
+let start1 = t.millis()
+for range(i, 10000000) { }
+let end1 = t.millis()
+println("Empty loop (10M iterations):", (end1 - start1), "ms")
+
+// Test 2: Simple arithmetic loop
+println("Testing arithmetic loops:")  
+let start2 = t.millis()
+var sum = 0
+for range(i, 5000000) {
+    sum = sum + i
+}
+let end2 = t.millis()
+println("Arithmetic loop (5M iterations):", (end2 - start2), "ms")
+println("Sum result:", sum)
+
+// Test 3: Comparison loop
+println("Testing comparison loops:")
+let start3 = t.millis()
+var count = 0
+for range(i, 3000000) {
+    if (i > 1000000) {
+        count = count + 1
+    }
+}
+let end3 = t.millis()
+println("Comparison loop (3M iterations):", (end3 - start3), "ms")
+println("Count result:", count)
+
+// Test 4: Modulo loop
+println("Testing modulo loops:")
+let start4 = t.millis()
+var modSum = 0
+for range(i, 2000000) {
+    modSum = modSum + (i % 100)
+}
+let end4 = t.millis()
+println("Modulo loop (2M iterations):", (end4 - start4), "ms")
+
+println("===========================")
+println("Target: All loops should be under 150ms")
+println("Fast loop test completed!")

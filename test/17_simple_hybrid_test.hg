@@ -1,0 +1,38 @@
+// Simple hybrid system test
+println("Simple Hybrid Test")
+println("==================")
+
+// Test 1: Basic arithmetic
+let result1 = 5 + 10 * 2
+println("Basic math:", result1)
+
+// Test 2: Simple function
+funct add(a, b) {
+    return a + b
+}
+
+let result2 = add(15, 25)
+println("Function call:", result2)
+
+// Test 3: Variables and assignment
+var counter = 0
+counter = counter + 10
+println("Variable assignment:", counter)
+
+// Test 4: Increment/decrement
+++counter
+println("After increment:", counter)
+
+// Test 5: Modulo operation
+let modResult = 17 % 5
+println("Modulo 17 % 5:", modResult)
+
+// Test 6: Simple loop
+var sum = 0
+for range(i, 10) {
+    sum = sum + i
+}
+println("Loop sum:", sum)
+
+println("==================")
+println("Simple hybrid test completed!")

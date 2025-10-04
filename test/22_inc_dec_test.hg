@@ -1,0 +1,24 @@
+// Test increment and decrement
+println("=== Increment/Decrement Test ===")
+
+println("1. Pre-increment:")
+var x = 5
+var result = ++x
+println("x =", x, "result =", result)
+
+println("2. Post-increment:")
+var y = 5
+var result2 = y++
+println("y =", y, "result =", result2)
+
+println("3. Pre-decrement:")
+var a = 5
+var result3 = --a
+println("a =", a, "result =", result3)
+
+println("4. Post-decrement:")
+var b = 5
+var result4 = b--
+println("b =", b, "result =", result4)
+
+println("=== Test Complete ===")

@@ -1,0 +1,95 @@
+// Performance benchmark for optimization improvements
+import "time" as t
+
+println("Performance Benchmark - Testing Optimizations")
+println("==================================================")
+
+// Test 1: Arithmetic operations performance
+let startTime = t.millis()
+var sum = 0
+for range(i, 50000) {
+    sum = sum + i * 2 - 1 
+    sum = sum % 1000000
+}
+let endTime = t.millis()
+println("Arithmetic benchmark:", (endTime - startTime), "ms")
+println("Sum result:", sum)
+
+// Test 2: String concatenation performance 
+startTime = t.millis()
+var text = ""
+for range(i, 1000) {
+    text = text + "test" + i
+}
+endTime = t.millis()
+println("String concat benchmark:", (endTime - startTime), "ms")
+println("String operations completed")
+
+// Test 3: Function call performance
+funct fibonacci(n) {
+    if (n <= 1) {
+        return n
+    }
+    return fibonacci(n-1) + fibonacci(n-2)
+}
+
+startTime = t.millis()
+let fibResult = fibonacci(25)
+endTime = t.millis()
+println("Fibonacci(25) benchmark:", (endTime - startTime), "ms")
+println("Fibonacci result:", fibResult)
+
+// Test 4: Array operations performance
+startTime = t.millis()
+let arr = []
+for range(i, 10000) {
+    arr = arr + [i, i*2, i*3]
+}
+endTime = t.millis()
+println("Array operations benchmark:", (endTime - startTime), "ms")
+
+// Test 5: Map operations performance
+startTime = t.millis()
+var mapTest = {"count": 0}
+for range(i, 5000) {
+    mapTest = {"count": mapTest.count + 1, "value": i}
+}
+endTime = t.millis()
+println("Map operations benchmark:", (endTime - startTime), "ms")
+println("Final map count:", mapTest.count)
+
+// Test 6: Increment/decrement performance
+startTime = t.millis()
+var counter = 0
+for range(i, 100000) {
+    ++counter
+    counter--
+    counter++
+    --counter
+}
+endTime = t.millis()
+println("Increment/decrement benchmark:", (endTime - startTime), "ms")
+println("Final counter:", counter)
+
+// Test 7: Math library performance
+import "fmaths" as math
+startTime = t.millis()
+var mathSum = 0
+for range(i, 10000) {
+    mathSum = mathSum + math.sqrt(i + 1) + math.sin(i / 10)
+}
+endTime = t.millis()
+println("Math library benchmark:", (endTime - startTime), "ms")
+println("Math sum:", mathSum)
+
+// Test 8: Constant folding test (should be optimized at compile time)
+startTime = t.millis()
+for range(i, 100000) {
+    let optimized = 5 + 10 * 2 - 3 // Should be folded to 22
+    let moreOptimized = optimized * 1 + 0 // Should be optimized
+}
+endTime = t.millis()
+println("Constant folding benchmark:", (endTime - startTime), "ms")
+
+println("==================================================")
+println("Benchmark completed!")

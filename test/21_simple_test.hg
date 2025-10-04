@@ -1,0 +1,26 @@
+// Simple test for break and continue
+println("=== Simple Test ===")
+
+println("1. Testing Break:")
+
+var sum1 = 0
+for range(i, 5) {
+    if (i >= 3) {
+        break
+    }
+    sum1 = sum1 + i
+}
+println("Sum with break (should be 0+1+2 = 3):", sum1)
+
+println("2. Testing Continue:")
+
+var sum2 = 0
+for range(i, 5) {
+    if (i % 2 == 0) {
+        continue
+    }
+    sum2 = sum2 + i
+}
+println("Sum with continue (odd numbers 1+3 = 4):", sum2)
+
+println("=== Test Complete ===")

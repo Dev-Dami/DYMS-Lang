@@ -1,0 +1,54 @@
+// Sub-150ms loop performance test
+import "time" as t
+
+println("Sub-150ms Loop Test")
+println("===================")
+
+// Test 1: Simple addition loop - target < 150ms for 2M iterations
+let start = t.millis()
+var sum = 0
+for range(i, 2000000) {
+    sum = sum + i
+}
+let end = t.millis()
+let elapsed1 = end - start
+println("Addition loop (2M):", elapsed1, "ms")
+if (elapsed1 < 150) {
+    println("✓ PASS - Under 150ms target")
+} else {
+    println("✗ FAIL - Over 150ms target")
+}
+
+// Test 2: Modulo loop - target < 150ms for 1M iterations  
+start = t.millis()
+var modSum = 0
+for range(i, 1000000) {
+    modSum = modSum + (i % 100)
+}
+end = t.millis()
+let elapsed2 = end - start
+println("Modulo loop (1M):", elapsed2, "ms")
+if (elapsed2 < 150) {
+    println("✓ PASS - Under 150ms target")
+} else {
+    println("✗ FAIL - Over 150ms target")
+}
+
+// Test 3: Variable increment - target < 50ms for 5M iterations
+start = t.millis()
+var counter = 0
+for range(i, 5000000) {
+    counter = counter + 1
+}
+end = t.millis()
+let elapsed3 = end - start
+println("Counter loop (5M):", elapsed3, "ms")
+if (elapsed3 < 50) {
+    println("✓ PASS - Under 50ms target")
+} else {
+    println("✗ FAIL - Over 50ms target")
+}
+
+println("===================")
+println("Performance targets met:", 
+    (elapsed1 < 150) && (elapsed2 < 150) && (elapsed3 < 50))

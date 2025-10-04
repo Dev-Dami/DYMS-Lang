@@ -1,0 +1,124 @@
+// Test for new language features: break/continue, inc/dec, try-catch
+println("=== New Features Test ===")
+
+println("\n1. Testing Break and Continue:")
+
+// Test break in for loop
+var sum1 = 0
+for range(i, 10) {
+    if (i >= 5) {
+        break
+    }
+    sum1 = sum1 + i
+}
+println("Sum with break (should be 10):", sum1)
+
+// Test continue in for loop
+var sum2 = 0
+for range(i, 10) {
+    if (i % 2 == 0) {
+        continue
+    }
+    sum2 = sum2 + i
+}
+println("Sum with continue (odd numbers 1+3+5+7+9 = 25):", sum2)
+
+println("\n2. Testing Increment/Decrement:")
+
+// Pre-increment
+var x = 5
+var pre_inc = ++x
+println("Pre-increment: x=", x, "result=", pre_inc)
+
+// Post-increment
+var y = 5
+var post_inc = y++
+println("Post-increment: y=", y, "result=", post_inc)
+
+// Pre-decrement
+var a = 5
+var pre_dec = --a
+println("Pre-decrement: a=", a, "result=", pre_dec)
+
+// Post-decrement
+var b = 5
+var post_dec = b--
+println("Post-decrement: b=", b, "result=", post_dec)
+
+println("\n3. Testing Try-Catch:")
+
+// Basic try-catch
+try {
+    println("In try block")
+    var result = 10 / 2
+    println("Division result:", result)
+} catch(e) {
+    println("Caught error:", e)
+}
+
+// Try-catch with error
+try {
+    println("About to cause an error...")
+    var bad = unknown_variable  // This should cause an error
+    println("This shouldn't print")
+} catch(err) {
+    println("Successfully caught error:", err)
+}
+
+println("\n4. Testing Nested Loops with Break/Continue:")
+
+var nested_sum = 0
+for range(i, 5) {
+    for range(j, 5) {
+        if (j == 2) {
+            continue  // Skip j=2
+        }
+        if (i == 3 && j == 4) {
+            break  // Break inner loop when i=3 and j=4
+        }
+        nested_sum = nested_sum + 1
+    }
+}
+println("Nested loops result:", nested_sum)
+
+println("\n5. Testing Increment in Loops:")
+
+var count = 0
+for range(i, 5) {
+    ++count
+}
+println("Increment in loop (should be 5):", count)
+
+// Fibonacci with try-catch and inc/dec
+funct safeFib(n) {
+    try {
+        if (n <= 0) {
+            return 0
+        }
+        if (n == 1) {
+            return 1
+        }
+        
+        var prev = 0
+        var curr = 1
+        var i = 2
+        
+        for range(dummy, n - 1) {
+            var next = prev + curr
+            prev = curr
+            curr = next
+            ++i
+        }
+        
+        return curr
+    } catch(e) {
+        println("Error in fibonacci:", e)
+        return -1
+    }
+}
+
+println("\n6. Testing Function with New Features:")
+var fib_result = safeFib(7)
+println("Fibonacci(7):", fib_result)
+
+println("\n=== All Features Test Complete ===")

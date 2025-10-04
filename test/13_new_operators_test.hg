@@ -1,0 +1,46 @@
+// Test modulo operator
+let a = 10
+let b = 3
+println("10 % 3 =", a % b)
+
+let x = 17
+let y = 5
+println("17 % 5 =", x % y)
+
+// Test increment/decrement operators
+var counter = 0
+println("Initial counter:", counter)
+
+// Prefix increment
+println("++counter:", ++counter)
+println("counter after ++:", counter)
+
+// Postfix increment
+println("counter++:", counter++)
+println("counter after ++:", counter)
+
+// Prefix decrement
+println("--counter:", --counter)
+println("counter after --:", counter)
+
+// Postfix decrement
+println("counter--:", counter--)
+println("counter after --:", counter)
+
+// Test try-catch
+try {
+    let result = 10 / 0
+    println("This shouldn't print")
+} catch(error) {
+    println("Caught error:", error)
+}
+
+try {
+    println("Normal operation")
+    let good = 5 + 5
+    println("Result:", good)
+} catch(err) {
+    println("This shouldn't execute")
+}
+
+println("Test completed successfully!")

@@ -1,0 +1,130 @@
+// Hybrid execution system test - VM for functions, interpreter for flexibility
+println("Hybrid Execution System Test")
+println("============================")
+
+// Test 1: Simple function (should go to VM)
+funct fastAdd(a, b) {
+    return a + b
+}
+
+// Test 2: Complex function (should use interpreter)
+funct complexLogic(x) {
+    if (x > 10) {
+        var result = 0
+        for range(i, x) {
+            result = result + i
+            if (result > 100) {
+                break
+            }
+        }
+        return result
+    } else {
+        return x * 2
+    }
+}
+
+// Test 3: Recursive function (should go to VM for performance)
+funct factorial(n) {
+    if (n <= 1) {
+        return 1
+    }
+    return n * factorial(n - 1)
+}
+
+// Test 4: Function that mixes VM and interpreter calls
+funct mixedFunction(n) {
+    let simple = fastAdd(n, 5)        // VM function call
+    let complex = complexLogic(simple) // Interpreter function call
+    return complex
+}
+
+println("Testing function interoperability:")
+
+// Test VM function calls
+let result1 = fastAdd(10, 20)
+println("VM function fastAdd(10, 20):", result1)
+
+// Test interpreter function calls
+let result2 = complexLogic(15)
+println("Interpreter function complexLogic(15):", result2)
+
+// Test recursive function (should be optimized to VM)
+let result3 = factorial(8)
+println("VM recursive factorial(8):", result3)
+
+// Test mixed function calls
+let result4 = mixedFunction(12)
+println("Mixed function mixedFunction(12):", result4)
+
+// Test 5: Expressions routing
+println("Testing expression routing:")
+
+// Simple expressions (should go to VM)
+let expr1 = 5 + 10 * 2
+println("Simple expression 5 + 10 * 2:", expr1)
+
+// Complex expressions (should use interpreter)
+var counter = 0
+let expr2 = ++counter + (counter * 2) - --counter
+println("Complex expression with inc/dec:", expr2)
+
+// Test 6: Loop routing
+println("Testing loop routing:")
+
+// Simple loop (should go to VM)
+var sum1 = 0
+for range(i, 1000) {
+    sum1 = sum1 + i
+}
+println("Simple loop sum (VM):", sum1)
+
+// Complex loop (should use interpreter)  
+var sum2 = 0
+for range(i, 100) {
+    if (i % 2 == 0) {
+        sum2 = sum2 + i
+    } else {
+        sum2 = sum2 - i
+    }
+    // Complex condition
+    try {
+        let temp = sum2 / i
+    } catch(e) {
+        sum2 = 0
+    }
+}
+println("Complex loop sum (Interpreter):", sum2)
+
+// Test 7: Import and module interaction
+import "time" as t
+import "fmaths" as math
+
+funct timedMathOperation(n) {
+    let start = t.millis()
+    var result = 0
+    for range(i, n) {
+        result = result + math.sqrt(i + 1)
+    }
+    let end = t.millis()
+    return result
+}
+
+let mathResult = timedMathOperation(1000)
+println("Timed math operation result:", mathResult)
+
+// Test 8: String operations mixing
+funct stringProcessor(base) {
+    var text = base
+    for range(i, 10) {
+        text = text + i
+    }
+    return text
+}
+
+let strResult = stringProcessor("test")
+println("String processing result:", strResult)
+
+println("============================")
+println("Hybrid system test completed!")
+println("VM handles: Simple functions, recursive functions, basic expressions")
+println("Interpreter handles: Complex logic, try-catch, new operators, modules")

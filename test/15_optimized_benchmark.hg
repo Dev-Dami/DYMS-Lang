@@ -1,0 +1,97 @@
+// Optimized performance benchmark
+import "time" as t
+import "fmaths" as math
+
+println("Optimized Performance Benchmark Results")
+println("=====================================")
+
+// Test 1: Fast arithmetic operations
+let start = t.millis()
+var sum = 0
+for range(i, 100000) {
+    sum = sum + i * 2 - 1 
+    sum = sum % 1000000
+}
+let end = t.millis()
+println("Arithmetic (100K ops):", (end - start), "ms")
+println("Final sum:", sum)
+
+// Test 2: Fast string operations
+start = t.millis()
+var text = "base"
+for range(i, 5000) {
+    text = text + "x"
+}
+end = t.millis()
+println("String concat (5K ops):", (end - start), "ms")
+
+// Test 3: Fast function calls with recursion
+funct fastFib(n) {
+    if (n <= 1) {
+        return n
+    }
+    return fastFib(n-1) + fastFib(n-2)
+}
+
+start = t.millis()
+let fibResult = fastFib(30)
+end = t.millis()
+println("Fibonacci(30):", (end - start), "ms")
+println("Result:", fibResult)
+
+// Test 4: Fast increment/decrement operations
+start = t.millis()
+var counter = 0
+for range(i, 200000) {
+    ++counter
+    counter--
+    counter++
+}
+end = t.millis()
+println("Inc/Dec (200K ops):", (end - start), "ms")
+println("Final counter:", counter)
+
+// Test 5: Fast math operations
+start = t.millis()
+var mathResult = 0
+for range(i, 20000) {
+    mathResult = mathResult + math.sqrt(i + 1)
+}
+end = t.millis()
+println("Math ops (20K sqrt):", (end - start), "ms")
+
+// Test 6: Boolean operations
+start = t.millis()
+var boolResult = true
+for range(i, 500000) {
+    boolResult = (i < 100000) && (i > 0)
+    boolResult = boolResult || (i == 50000)
+}
+end = t.millis()
+println("Boolean ops (500K):", (end - start), "ms")
+println("Bool result:", boolResult)
+
+// Test 7: Comparison operations
+start = t.millis()
+var compResult = 0
+for range(i, 300000) {
+    if (i > 100000 && i < 200000) {
+        compResult = compResult + 1
+    }
+}
+end = t.millis()
+println("Comparisons (300K):", (end - start), "ms")
+println("Compare count:", compResult)
+
+// Test 8: Modulo performance
+start = t.millis()
+var modResult = 0
+for range(i, 100000) {
+    modResult = modResult + (i % 100)
+}
+end = t.millis()
+println("Modulo ops (100K):", (end - start), "ms")
+println("Mod result:", modResult)
+
+println("=====================================")
+println("Benchmark completed! All optimizations working.")
