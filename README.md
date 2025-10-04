@@ -48,7 +48,9 @@
   - Loops: `while` and `for range(i, N)`
 
 - **Advanced Features**:
-  - Dual execution: AST interpretation + bytecode VM
+  - **High-performance bytecode VM**: 20+ optimized opcodes for common operations
+  - **Compiler optimizations**: Peephole optimization, constant folding, dead code elimination
+  - **Fast execution**: Specialized opcodes for constants (0, 1, true, false), loops, string concatenation
   - Property access via dot notation for maps
   - String escaping: `\n`, `\t`, `\r\n`, `\\`, `\"`
   - Single-line comments: `//`
@@ -105,7 +107,7 @@ var y = 20
 const who = "DYMS"
 let ok = true
 let arr = [1, 2, 3, "mixed"]
-let m = {"name": "DYMS", "version": 0.3, "stable": ok}
+let m = {"name": "DYMS", "version": 0.4, "stable": ok}
 
 if (x > 5) { println("x > 5") } else { println("x <= 5") }
 for range(i, 3) { println(i) }
@@ -163,7 +165,7 @@ t.sleep(1.5)
 ### Core Components
 
 - **AST System**: Node definitions, pretty printing, function and import support
-- **VM & Compiler**: Stack-based VM, bytecode compilation, call frames, local variable optimization
+- **VM & Compiler**: High-performance stack-based VM with 20+ fast opcodes, peephole optimization, constant deduplication, call frame management
 - **Runtime Environment**: Lexical scoping, dynamic value system, interpreter, pretty printing
 - **Error System**: Line/column-aware parser and runtime errors
 - **Module System**: Built-in libraries with aliasing support
@@ -192,6 +194,8 @@ t.sleep(1.5)
 
 - **Full Language Tour**: `go run . types_demo.hg`
 - **Performance Benchmarking**: `go run . speed.hg`
+- **Advanced Benchmark Suite**: `go run . benchmark.hg` — tests VM optimizations
+- **Fast Bytecode Test**: `go run . fast_test.hg` — verifies optimized opcodes
 - **Algorithm Patterns**: `go run . other.hg`
 - **Module System & Timing**: `go run . time_demo.hg`, `go run . math.hg`
 - **Data Structure Operations**: `go run . map.hg`
@@ -201,15 +205,17 @@ t.sleep(1.5)
 
 ## Roadmap
 
-### Completed
+### Completed (v0.4)
 
-- User-defined functions with closures
-- Bytecode VM with optimized opcodes
-- Enhanced time library
-- Property access via dot notation
-- Advanced pretty printing
-- Robust error handling
-- Performance optimizations
+- **High-performance bytecode VM**: 20+ specialized opcodes for common operations
+- **Compiler optimizations**: Peephole optimization, constant deduplication, automatic optimization passes
+- **Fast execution paths**: Optimized opcodes for constants (0, 1, true, false, null), loops, string operations
+- **Memory optimizations**: Pre-allocated stacks, constant pooling, improved garbage collection
+- User-defined functions with closures and return statements
+- Enhanced time library with `now()`, `millis()`, `sleep()`
+- Property access via dot notation for maps
+- Advanced pretty printing with stable output
+- Comprehensive error handling with line/column tracking
 
 ### In Progress
 
