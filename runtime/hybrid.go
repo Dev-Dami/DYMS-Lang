@@ -4,7 +4,7 @@ import (
 	"DYMS/ast"
 )
 
-// HybridEngine combines VM and interpreter for optimal performance
+// HybridEngine combines VM and interpreter
 type HybridEngine struct {
 	vm                   *VM
 	interpreter          *Environment
@@ -19,7 +19,7 @@ type HybridEngine struct {
 // FunctionStats tracks performance metrics for functions
 type FunctionStats struct {
 	CallCount    int
-	VMTime       int64 // nanoseconds
+	VMTime       int64 
 	InterpreterTime int64
 	PreferVM     bool
 }
@@ -34,27 +34,25 @@ func NewHybridEngine(globalEnv *Environment) *HybridEngine {
 		interpreterCallCount:    0,
 		performanceMode:         true,
 		functionStats:           make(map[string]*FunctionStats),
-		loopComplexityThreshold: 5, // Statements in loop body
+		loopComplexityThreshold: 5, 
 	}
 }
 
-// SetPerformanceMode toggles between performance and compatibility
 func (h *HybridEngine) SetPerformanceMode(enabled bool) {
 	h.performanceMode = enabled
 }
 
-// GetStats returns execution statistics
 func (h *HybridEngine) GetStats() (vmCalls, interpreterCalls int) {
 	return h.vmCallCount, h.interpreterCallCount
 }
 
-// shouldUseVM determines if VM should be used based on node complexity
 func (h *HybridEngine) shouldUseVM(node ast.Stmt) bool {
 	if !h.performanceMode {
 		return false
 	}
 	
-	// Simple expressions and math operations prefer VM
+	// Simple expressions/math operations should prefer VM
+	// for fast executions
 	switch n := node.(type) {
 	case *ast.BinaryExpr:
 		return h.isMathExpression(n)
@@ -69,13 +67,12 @@ func (h *HybridEngine) shouldUseVM(node ast.Stmt) bool {
 	}
 }
 
-// isMathExpression checks if binary expression is pure math
 func (h *HybridEngine) isMathExpression(expr *ast.BinaryExpr) bool {
 	switch expr.Operator {
 	case "+", "-", "*", "/", "%":
 		return true
 	case "==", "!=", "<", ">", "<=", ">=":
-		return true // Comparisons are fast
+		return true 
 	default:
 		return false
 	}
@@ -90,16 +87,15 @@ func (h *HybridEngine) isSimpleLoop(stmt *ast.ForStatement) bool {
 	return statementCount <= h.loopComplexityThreshold
 }
 
-// isPureFunction checks if function is pure math computation
 func (h *HybridEngine) isPureFunction(fn *ast.FunctionDeclaration) bool {
 	if fn.Body == nil {
 		return false
 	}
-	// Simple heuristic: functions with few statements are likely pure
+	// heuristic
 	return len(fn.Body.Statements) <= 3
 }
 
-// Execute decides whether to use VM or interpreter based on smart heuristics
+// Executes whether to use VM or interpreter based on heuristics
 func (h *HybridEngine) Execute(node ast.Stmt) (RuntimeVal, *Error) {
 	switch n := node.(type) {
 	case *ast.Program:
@@ -118,21 +114,21 @@ func (h *HybridEngine) Execute(node ast.Stmt) (RuntimeVal, *Error) {
 	case *ast.ForStatement, *ast.WhileStatement:
 		return h.executeLoop(n)
 	case *ast.BreakStatement, *ast.ContinueStatement:
-		// Control flow always uses interpreter
+		// control flow use interpreter
 		h.interpreterCallCount++
 		return Evaluate(node, h.interpreter)
 	case *ast.TryStatement:
-		// Exception handling always uses interpreter
+		// Exceptions handling use interpreter
 		h.interpreterCallCount++
 		return evalTryStatement(n, h.interpreter)
 	default:
-		// Fallback to interpreter for complex constructs
+		// fallback to interpreter if complex constructs
 		h.interpreterCallCount++
 		return Evaluate(node, h.interpreter)
 	}
 }
 
-// Execute program with hybrid approach
+// execution of program with a hybrid approach
 func (h *HybridEngine) executeProgram(program *ast.Program) (RuntimeVal, *Error) {
 	var lastResult RuntimeVal
 	var err *Error
@@ -149,9 +145,10 @@ func (h *HybridEngine) executeProgram(program *ast.Program) (RuntimeVal, *Error)
 	return lastResult, nil
 }
 
-// Functions use interpreter for reliability, VM for pure math functions
+// Functions to use interpreter for reliability and VM for pure math functions
 func (h *HybridEngine) executeFunctionDeclaration(fd *ast.FunctionDeclaration) (RuntimeVal, *Error) {
-	// For now, use interpreter for all functions (reliable and fast enough)
+	// For now, use interpreter for all functions for reliability
+	// Would change to more hybrid solution
 	uf := &UserFunction{Params: fd.Params, Body: fd.Body, Env: h.interpreter}
 	h.interpreter.DeclareVar(fd.Name, uf, true)
 	return uf, nil
@@ -159,20 +156,19 @@ func (h *HybridEngine) executeFunctionDeclaration(fd *ast.FunctionDeclaration) (
 
 // Function calls use interpreter for reliability
 func (h *HybridEngine) executeCallExpr(call *ast.CallExpr) (RuntimeVal, *Error) {
-	// Use interpreter for all function calls
 	return Evaluate(call, h.interpreter)
 }
 
-// Binary expressions use fast interpreter evaluation
+// Binary expressions use interpreter evaluation
 func (h *HybridEngine) executeBinaryExpr(expr *ast.BinaryExpr) (RuntimeVal, *Error) {
-	// Use optimized interpreter for all binary expressions
+	// Use interpreter for all binary expressions
 	return evalBinaryExpr(expr, h.interpreter)
 }
 
 // executeBinaryExprVM attempts to compile and run on VM
 func (h *HybridEngine) executeBinaryExprVM(expr *ast.BinaryExpr) (RuntimeVal, *Error) {
-	// For now, fallback to interpreter (VM compilation is complex)
-	// Future enhancement: compile simple math expressions to bytecode
+	// For now, fallingback to interpreter bcuz VM compilation will be complex
+	// For futute enhancement: i would compile simple math expressions to bytecode
 	return evalBinaryExpr(expr, h.interpreter)
 }
 
