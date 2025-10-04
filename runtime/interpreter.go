@@ -212,7 +212,11 @@ func Evaluate(stmt ast.Stmt, scope *Environment) (RuntimeVal, *Error) {
 		return evalImport(s, scope)
 	case *ast.FunctionDeclaration:
 		uf := &UserFunction{Params: s.Params, Body: s.Body, Env: scope}
-		scope.DeclareVar(s.Name, uf, true)
+		if s.Name != "" {
+			// Function declaration with name - declare in scope
+			scope.DeclareVar(s.Name, uf, true)
+		}
+		// Return the function (for both declarations and expressions)
 		return uf, nil
 	case *ast.ReturnStatement:
 		val, err := Evaluate(s.Value, scope)

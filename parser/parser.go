@@ -485,6 +485,8 @@ func (p *Parser) parsePrimary() (ast.Expr, *runtime.Error) {
 			return nil, err
 		}
 		return expr, nil
+	case lexer.Funct:
+		return p.parseFunctionExpression()
 	default:
 		return nil, runtime.NewError(fmt.Sprintf("Unexpected token: %s", tok.Value), tok.Line, tok.Column)
 	}
@@ -543,6 +545,42 @@ func (p *Parser) parseFunctionDeclaration() (ast.Stmt, *runtime.Error) {
 		return nil, err
 	}
 	return &ast.FunctionDeclaration{Name: nameTok.Value, Params: params, Body: body}, nil
+}
+
+// Parse function expression (anonymous function)
+func (p *Parser) parseFunctionExpression() (ast.Expr, *runtime.Error) {
+	// funct -> already consumed by parsePrimary
+	_, err := p.expect(lexer.OpenParen, "Expected '(' after 'funct'")
+	if err != nil {
+		return nil, err
+	}
+	params := []string{}
+	if p.peek().Type != lexer.CloseParen {
+		for {
+			paramTok, err := p.expect(lexer.Identifier, "Expected parameter name")
+			if err != nil {
+				return nil, err
+			}
+			params = append(params, paramTok.Value)
+			if p.peek().Type == lexer.CloseParen {
+				break
+			}
+			_, err = p.expect(lexer.Comma, "Expected ',' or ')' in parameter list")
+			if err != nil {
+				return nil, err
+			}
+		}
+	}
+	_, err = p.expect(lexer.CloseParen, "Expected ')' after parameters")
+	if err != nil {
+		return nil, err
+	}
+	body, err := p.parseBlockStatement()
+	if err != nil {
+		return nil, err
+	}
+	// Return a function declaration but as an expression
+	return &ast.FunctionDeclaration{Name: "", Params: params, Body: body}, nil
 }
 
 func (p *Parser) parseReturnStatement() (ast.Stmt, *runtime.Error) {

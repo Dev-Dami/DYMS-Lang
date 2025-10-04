@@ -1,13 +1,17 @@
 import "time" as t
 import "fmaths" as math
 
-let t0 = t.millis()
-for range(i, 2000000) { 
-    math.sin(i)
+funct benchmark(label, body) {
+    let start = t.millis()
+    body()
+    let elapsed = t.millis() - start
+    println(label + " took " + elapsed + " ms")
 }
-let t1 = t.millis()
 
-
-println("loopTest took " + (t1 - t0) + " ms")
+benchmark("loopTest", funct() {
+    for range(i, 2000000) {
+        math.sin(i)
+    }
+})
 
 println("Answer: " + math.sin(30))

@@ -161,6 +161,7 @@ type FunctionDeclaration struct {
 	Body   *BlockStatement
 }
 func (fd *FunctionDeclaration) Kind() NodeType { return FunctionDeclarationNode }
+func (fd *FunctionDeclaration) exprNode()      {}
 
 // Return Statement: return expr
 type ReturnStatement struct {
