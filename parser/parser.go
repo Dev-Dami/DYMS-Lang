@@ -9,8 +9,10 @@ import (
 )
 
 type Parser struct {
-	tokens []lexer.Token
-	pos    int
+	tokens    []lexer.Token
+	pos       int
+	lookahead [3]lexer.Token // Fast lookahead cache
+	lookaheadValid [3]bool
 }
 
 // parser ->
@@ -18,17 +20,46 @@ func New(tokens []lexer.Token) *Parser {
 	return &Parser{tokens: tokens, pos: 0}
 }
 
-// helpers ->
+// Fast helpers with caching
 func (p *Parser) peek() lexer.Token {
-	if p.pos >= len(p.tokens) {
-		return lexer.Token{Type: -1, Value: ""}
+	if !p.lookaheadValid[0] {
+		if p.pos >= len(p.tokens) {
+			p.lookahead[0] = lexer.Token{Type: -1, Value: ""}
+		} else {
+			p.lookahead[0] = p.tokens[p.pos]
+		}
+		p.lookaheadValid[0] = true
 	}
-	return p.tokens[p.pos]
+	return p.lookahead[0]
+}
+
+func (p *Parser) peekAhead(offset int) lexer.Token {
+	if offset >= 3 { // fallback for far lookahead
+		if p.pos+offset >= len(p.tokens) {
+			return lexer.Token{Type: -1, Value: ""}
+		}
+		return p.tokens[p.pos+offset]
+	}
+	if !p.lookaheadValid[offset] {
+		if p.pos+offset >= len(p.tokens) {
+			p.lookahead[offset] = lexer.Token{Type: -1, Value: ""}
+		} else {
+			p.lookahead[offset] = p.tokens[p.pos+offset]
+		}
+		p.lookaheadValid[offset] = true
+	}
+	return p.lookahead[offset]
 }
 
 func (p *Parser) consume() lexer.Token {
 	tok := p.peek()
 	p.pos++
+	// Shift lookahead cache for better performance
+	p.lookahead[0] = p.lookahead[1]
+	p.lookahead[1] = p.lookahead[2]
+	p.lookaheadValid[0] = p.lookaheadValid[1]
+	p.lookaheadValid[1] = p.lookaheadValid[2]
+	p.lookaheadValid[2] = false
 	return tok
 }
 
@@ -314,7 +345,16 @@ func (p *Parser) parseMultiplicativeExpr() (ast.Expr, *runtime.Error) {
 		return nil, err
 	}
 
-	for p.peek().Value == "*" || p.peek().Value == "/" || p.peek().Type == lexer.Modulo {
+	// Fast operator checking
+	for {
+		tok := p.peek()
+		if tok.Type == lexer.BinaryOperator {
+			if tok.Value != "*" && tok.Value != "/" {
+				break
+			}
+		} else if tok.Type != lexer.Modulo {
+			break
+		}
 		op := p.consume().Value
 		right, err := p.parseUnaryExpr()
 		if err != nil {

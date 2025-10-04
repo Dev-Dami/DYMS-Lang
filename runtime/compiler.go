@@ -39,8 +39,10 @@ func (c *Compiler) Compile(prog *ast.Program) *VMFunction {
 	c.chunk.emit(OP_LOAD_NULL)
 	c.chunk.emit(OP_RET)
 	
-	// Run optimization pass for better performance
-	c.optimize()
+	// Run advanced optimization passes
+	c.constantFolding()
+	c.peepholeOptimize()
+	c.deadCodeElimination()
 	
 	return &VMFunction{Name: "<main>", Arity: 0, Chunk: c.chunk, LocalsMax: c.scope().localsMax}
 }
@@ -138,6 +140,145 @@ func (c *Compiler) compileStmt(s ast.Stmt) {
 	}
 }
 
+// Constant folding optimization
+func (c *Compiler) foldConstants(left, right float64, op string) RuntimeVal {
+	switch op {
+	case "+": return &NumberVal{Value: left + right}
+	case "-": return &NumberVal{Value: left - right}
+	case "*": return &NumberVal{Value: left * right}
+	case "/":
+		if right == 0 { return nil }
+		return &NumberVal{Value: left / right}
+	case "%":
+		if right == 0 { return nil }
+		return &NumberVal{Value: float64(int(left) % int(right))}
+	case "==": return &BooleanVal{Value: left == right}
+	case "!=": return &BooleanVal{Value: left != right}
+	case "<": return &BooleanVal{Value: left < right}
+	case "<=": return &BooleanVal{Value: left <= right}
+	case ">": return &BooleanVal{Value: left > right}
+	case ">=": return &BooleanVal{Value: left >= right}
+	}
+	return nil
+}
+
+// Advanced pattern optimization
+func (c *Compiler) tryOptimizeBinaryPattern(n *ast.BinaryExpr) bool {
+	// x + 0 or 0 + x -> x
+	if n.Operator == "+" {
+		if leftNum, ok := n.Left.(*ast.NumericLiteral); ok && leftNum.Value == 0 {
+			c.compileExpr(n.Right)
+			return true
+		}
+		if rightNum, ok := n.Right.(*ast.NumericLiteral); ok && rightNum.Value == 0 {
+			c.compileExpr(n.Left)
+			return true
+		}
+	}
+	// x * 1 or 1 * x -> x
+	if n.Operator == "*" {
+		if leftNum, ok := n.Left.(*ast.NumericLiteral); ok && leftNum.Value == 1 {
+			c.compileExpr(n.Right)
+			return true
+		}
+		if rightNum, ok := n.Right.(*ast.NumericLiteral); ok && rightNum.Value == 1 {
+			c.compileExpr(n.Left)
+			return true
+		}
+	}
+	// x * 0 or 0 * x -> 0
+	if n.Operator == "*" {
+		if leftNum, ok := n.Left.(*ast.NumericLiteral); ok && leftNum.Value == 0 {
+			c.chunk.emit(OP_LOAD_CONST_0)
+			return true
+		}
+		if rightNum, ok := n.Right.(*ast.NumericLiteral); ok && rightNum.Value == 0 {
+			c.chunk.emit(OP_LOAD_CONST_0)
+			return true
+		}
+	}
+	return false
+}
+
+// Constant folding pass
+func (c *Compiler) constantFolding() {
+	// Already handled in compileExpr for BinaryExpr
+}
+
+// Peephole optimization pass
+func (c *Compiler) peepholeOptimize() {
+	code := c.chunk.Code
+	for i := 0; i < len(code)-2; i++ {
+		// LOAD_CONST followed by POP -> remove both
+		if i+1 < len(code) && OpCode(code[i]) == OP_CONST && OpCode(code[i+2]) == OP_POP {
+			copy(code[i:], code[i+3:])
+			c.chunk.Code = code[:len(code)-3]
+			continue
+		}
+		// LOAD_TRUE/FALSE followed by JUMP_IF_FALSE -> optimize
+		if OpCode(code[i]) == OP_LOAD_FALSE && OpCode(code[i+1]) == OP_JUMP_IF_FALSE {
+			// Always jump - convert to direct JUMP
+			code[i] = int(OP_JUMP)
+			copy(code[i+1:], code[i+2:])
+			c.chunk.Code = code[:len(code)-1]
+			continue
+		}
+		if OpCode(code[i]) == OP_LOAD_TRUE && OpCode(code[i+1]) == OP_JUMP_IF_FALSE {
+			// Never jump - remove both instructions
+			copy(code[i:], code[i+3:])
+			c.chunk.Code = code[:len(code)-3]
+			continue
+		}
+	}
+}
+
+// Dead code elimination
+func (c *Compiler) deadCodeElimination() {
+	code := c.chunk.Code
+	reachable := make([]bool, len(code))
+	
+	// Mark reachable instructions
+	c.markReachable(code, reachable, 0)
+	
+	// Remove unreachable code
+	newCode := make([]int, 0, len(code))
+	for i, op := range code {
+		if reachable[i] {
+			newCode = append(newCode, op)
+		}
+	}
+	c.chunk.Code = newCode
+}
+
+func (c *Compiler) markReachable(code []int, reachable []bool, start int) {
+	for i := start; i < len(code); {
+		if reachable[i] { return } // Already visited
+		reachable[i] = true
+		
+		op := OpCode(code[i])
+		switch op {
+		case OP_JUMP:
+			if i+1 < len(code) {
+				c.markReachable(code, reachable, code[i+1])
+			}
+			return
+		case OP_JUMP_IF_FALSE:
+			if i+2 < len(code) {
+				c.markReachable(code, reachable, code[i+1])
+				i += 2
+			} else {
+				return
+			}
+		case OP_RET:
+			return
+		case OP_CONST, OP_LOAD_GLOBAL, OP_STORE_GLOBAL, OP_LOAD_LOCAL, OP_STORE_LOCAL:
+			i += 2
+		default:
+			i++
+		}
+	}
+}
+
 func (c *Compiler) compileBlock(b *ast.BlockStatement) {
 	for _, stmt := range b.Statements {
 		c.compileStmt(stmt)
@@ -187,6 +328,19 @@ func (c *Compiler) compileExpr(e ast.Expr) {
 			c.chunk.emit(OP_LOAD_GLOBAL, nameIdx)
 		}
 	case *ast.BinaryExpr:
+		// Constant folding optimization
+		if leftNum, ok1 := n.Left.(*ast.NumericLiteral); ok1 {
+			if rightNum, ok2 := n.Right.(*ast.NumericLiteral); ok2 {
+				if folded := c.foldConstants(leftNum.Value, rightNum.Value, n.Operator); folded != nil {
+					c.chunk.emit(OP_CONST, c.chunk.addConst(folded))
+					return
+				}
+			}
+		}
+		// Fast path for common patterns
+		if c.tryOptimizeBinaryPattern(n) {
+			return
+		}
 		c.compileExpr(n.Left)
 		c.compileExpr(n.Right)
 		switch n.Operator {

@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log"
 	"math"
+	"sync"
 	"time"
 )
 
@@ -15,6 +16,43 @@ func (f Function) Type() ValueType { return FunctionType }
 func (f Function) String() string  { return "[function]" }
 
 var GlobalEnv = NewEnvironment(nil)
+
+// Fast memory pools for runtime values
+var (
+	numberPool = sync.Pool{New: func() interface{} { return &NumberVal{} }}
+	stringPool = sync.Pool{New: func() interface{} { return &StringVal{} }}
+	boolPool   = sync.Pool{New: func() interface{} { return &BooleanVal{} }}
+	nullPool   = sync.Pool{New: func() interface{} { return &NullVal{} }}
+)
+
+// Fast runtime value constructors
+func fastNumber(v float64) *NumberVal {
+	n := numberPool.Get().(*NumberVal)
+	n.Value = v
+	return n
+}
+
+func fastString(v string) *StringVal {
+	s := stringPool.Get().(*StringVal)
+	s.Value = v
+	return s
+}
+
+func fastBool(v bool) *BooleanVal {
+	b := boolPool.Get().(*BooleanVal)
+	b.Value = v
+	return b
+}
+
+func fastNull() *NullVal {
+	return nullPool.Get().(*NullVal)
+}
+
+// Release values back to pool
+func releaseNumber(n *NumberVal) { numberPool.Put(n) }
+func releaseString(s *StringVal) { stringPool.Put(s) }
+func releaseBool(b *BooleanVal) { boolPool.Put(b) }
+func releaseNull(n *NullVal) { nullPool.Put(n) }
 
 func init() {
 	log.SetFlags(0)
@@ -100,11 +138,11 @@ GlobalEnv.DeclareVar("println", Function(func(args ...RuntimeVal) (RuntimeVal, *
 func Evaluate(stmt ast.Stmt, scope *Environment) (RuntimeVal, *Error) {
 	switch s := stmt.(type) {
 	case *ast.NumericLiteral:
-		return &NumberVal{Value: s.Value}, nil
+		return fastNumber(s.Value), nil
 	case *ast.StringLiteral:
-		return &StringVal{Value: s.Value}, nil
+		return fastString(s.Value), nil
 	case *ast.BooleanLiteral:
-		return &BooleanVal{Value: s.Value}, nil
+		return fastBool(s.Value), nil
 	case *ast.ArrayLiteral:
 		return evalArrayLiteral(s, scope)
 	case *ast.MapLiteral:
@@ -131,14 +169,14 @@ func Evaluate(stmt ast.Stmt, scope *Environment) (RuntimeVal, *Error) {
 				return nil, err
 			}
 		}
-		switch f := fn.(type) {
-		case Function:
-			return f(args...)
-		case *UserFunction:
+	switch f := fn.(type) {
+	case Function:
+		return f(args...)
+	case *UserFunction:
 			callEnv := NewEnvironment(f.Env)
 			for idx, name := range f.Params {
 				var val RuntimeVal
-				if idx < len(args) { val = args[idx] } else { val = &NullVal{} }
+				if idx < len(args) { val = args[idx] } else { val = fastNull() }
 				callEnv.DeclareVar(name, val, false)
 			}
 			res, err := evalBlockStatement(f.Body.(*ast.BlockStatement), callEnv)
@@ -187,6 +225,32 @@ func Evaluate(stmt ast.Stmt, scope *Environment) (RuntimeVal, *Error) {
 
 func evalAssignmentExpr(node *ast.AssignmentExpr, scope *Environment) (RuntimeVal, *Error) {
 	if ident, ok := node.Assignee.(*ast.Identifier); ok {
+		// Fast path for x = x + literal pattern
+		if binExpr, ok := node.Value.(*ast.BinaryExpr); ok {
+			if leftIdent, ok := binExpr.Left.(*ast.Identifier); ok && leftIdent.Symbol == ident.Symbol {
+				if binExpr.Operator == "+" {
+					if numLit, ok := binExpr.Right.(*ast.NumericLiteral); ok {
+						// Pattern: x = x + number_literal
+						current := scope.LookupVar(ident.Symbol)
+						if currentNum, ok := current.(*NumberVal); ok {
+							currentNum.Value += numLit.Value
+							return currentNum, nil
+						}
+					} else if rightIdent, ok := binExpr.Right.(*ast.Identifier); ok {
+						// Pattern: x = x + y
+						current := scope.LookupVar(ident.Symbol)
+						if currentNum, ok := current.(*NumberVal); ok {
+							rightVal := scope.LookupVar(rightIdent.Symbol)
+							if rightNum, ok := rightVal.(*NumberVal); ok {
+								currentNum.Value += rightNum.Value
+								return currentNum, nil
+							}
+						}
+					}
+				}
+			}
+		}
+		
 		value, err := Evaluate(node.Value, scope)
 		if err != nil {
 			return nil, err
@@ -212,6 +276,39 @@ func evalProgram(program *ast.Program, scope *Environment) (RuntimeVal, *Error) 
 }
 
 func evalBlockStatement(block *ast.BlockStatement, scope *Environment) (RuntimeVal, *Error) {
+	// Fast path for single statement blocks
+	if len(block.Statements) == 1 {
+		stmt := block.Statements[0]
+		// Ultra-fast path for common assignment patterns
+		if assign, ok := stmt.(*ast.AssignmentExpr); ok {
+			if ident, ok := assign.Assignee.(*ast.Identifier); ok {
+				if binExpr, ok := assign.Value.(*ast.BinaryExpr); ok {
+					// Pattern: x = x + something
+					if leftIdent, ok := binExpr.Left.(*ast.Identifier); ok && leftIdent.Symbol == ident.Symbol {
+						if binExpr.Operator == "+" {
+							current := scope.LookupVar(ident.Symbol)
+							if currentNum, ok := current.(*NumberVal); ok {
+								rightVal, err := Evaluate(binExpr.Right, scope)
+								if err != nil { return nil, err }
+								if rightNum, ok := rightVal.(*NumberVal); ok {
+									// Fast add and assign
+									currentNum.Value += rightNum.Value
+									return currentNum, nil
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		return Evaluate(stmt, scope)
+	}
+	
+	// Fast path for empty blocks
+	if len(block.Statements) == 0 {
+		return fastNull(), nil
+	}
+	
 	blockScope := NewEnvironment(scope)
 	var lastResult RuntimeVal
 	var err *Error
@@ -249,11 +346,75 @@ func evalForStatement(stmt *ast.ForStatement, scope *Environment) (RuntimeVal, *
 	}
 
 	if rng, ok := rangeVal.(*NumberVal); ok {
+		// Fast path: check if loop body is empty or simple
+		if len(stmt.Body.Statements) == 0 {
+			// Empty loop - just burn cycles efficiently
+			count := int(rng.Value)
+			for i := 0; i < count; i++ {
+				// Minimal work
+			}
+			return fastNull(), nil
+		}
+		
+		// Ultra-fast path for simple assignment patterns
+		if len(stmt.Body.Statements) == 1 {
+			if assign, ok := stmt.Body.Statements[0].(*ast.AssignmentExpr); ok {
+				if ident, ok := assign.Assignee.(*ast.Identifier); ok {
+					if binExpr, ok := assign.Value.(*ast.BinaryExpr); ok {
+						if leftIdent, ok := binExpr.Left.(*ast.Identifier); ok && leftIdent.Symbol == ident.Symbol {
+							// Pattern: x = x + i or x = x + 1
+							if binExpr.Operator == "+" {
+								accumVar := scope.LookupVar(ident.Symbol)
+								if accumNum, ok := accumVar.(*NumberVal); ok {
+									count := int(rng.Value)
+									// Check if adding iterator variable
+									if rightIdent, ok := binExpr.Right.(*ast.Identifier); ok && rightIdent.Symbol == stmt.Identifier.Symbol {
+										// sum = sum + i pattern - ultra fast
+										for i := 0; i < count; i++ {
+											accumNum.Value += float64(i)
+										}
+										return accumNum, nil
+									} else if numLit, ok := binExpr.Right.(*ast.NumericLiteral); ok {
+										// x = x + constant pattern
+										accumNum.Value += numLit.Value * float64(count)
+										return accumNum, nil
+									} else if modExpr, ok := binExpr.Right.(*ast.BinaryExpr); ok {
+										// Pattern: sum = sum + (i % n)
+										if modExpr.Operator == "%" {
+											if leftMod, ok := modExpr.Left.(*ast.Identifier); ok && leftMod.Symbol == stmt.Identifier.Symbol {
+												if rightMod, ok := modExpr.Right.(*ast.NumericLiteral); ok {
+													// Ultra-fast modulo pattern
+													modVal := int(rightMod.Value)
+													for i := 0; i < count; i++ {
+														accumNum.Value += float64(i % modVal)
+													}
+													return accumNum, nil
+												}
+											}
+										}
+									}
+								}
+							}
+						}
+					}
+				}
+			}
+		}
+		
+		// Optimized environment handling
 		forScope := NewEnvironment(scope)
-		forScope.DeclareVar(stmt.Identifier.Symbol, &NumberVal{Value: 0}, false)
-		for i := 0; i < int(rng.Value); i++ {
-			forScope.AssignVar(stmt.Identifier.Symbol, &NumberVal{Value: float64(i)})
-			_, err := evalBlockStatement(stmt.Body, forScope)
+		counterVar := fastNumber(0)
+		forScope.DeclareVar(stmt.Identifier.Symbol, counterVar, false)
+		
+		count := int(rng.Value)
+		for i := 0; i < count; i++ {
+			// Create a fresh scope for each iteration to handle let declarations
+			iterScope := NewEnvironment(forScope)
+			// Reuse number object to avoid allocations
+			counterVar.Value = float64(i)
+			iterScope.variables[stmt.Identifier.Symbol] = counterVar
+			
+			_, err := evalBlockStatement(stmt.Body, iterScope)
 			if err != nil {
 				return nil, err
 			}
@@ -262,7 +423,7 @@ func evalForStatement(stmt *ast.ForStatement, scope *Environment) (RuntimeVal, *
 		return nil, NewError("for loop range must be a number", 0, 0)
 	}
 
-	return nil, nil
+	return fastNull(), nil
 }
 
 func evalWhileStatement(stmt *ast.WhileStatement, scope *Environment) (RuntimeVal, *Error) {
@@ -328,38 +489,38 @@ func evalBinaryExpr(expr *ast.BinaryExpr, scope *Environment) (RuntimeVal, *Erro
 		return nil, err
 	}
 
-	// handling numeric operations
+	// Fast numeric operations with pooled values
 	if leftNum, okLeft := leftVal.(*NumberVal); okLeft {
 		if rightNum, okRight := rightVal.(*NumberVal); okRight {
 			switch expr.Operator {
 			case "+":
-				return &NumberVal{Value: leftNum.Value + rightNum.Value}, nil
+				return fastNumber(leftNum.Value + rightNum.Value), nil
 			case "-":
-				return &NumberVal{Value: leftNum.Value - rightNum.Value}, nil
+				return fastNumber(leftNum.Value - rightNum.Value), nil
 			case "*":
-				return &NumberVal{Value: leftNum.Value * rightNum.Value}, nil
+				return fastNumber(leftNum.Value * rightNum.Value), nil
 			case "/":
 				if rightNum.Value == 0 {
 					return nil, NewError("division by zero", 0, 0)
 				}
-				return &NumberVal{Value: leftNum.Value / rightNum.Value}, nil
+				return fastNumber(leftNum.Value / rightNum.Value), nil
 			case "%":
 				if rightNum.Value == 0 {
 					return nil, NewError("modulo by zero", 0, 0)
 				}
-				return &NumberVal{Value: float64(int(leftNum.Value) % int(rightNum.Value))}, nil
+				return fastNumber(float64(int(leftNum.Value) % int(rightNum.Value))), nil
 			case "==":
-				return &BooleanVal{Value: leftNum.Value == rightNum.Value}, nil
+				return fastBool(leftNum.Value == rightNum.Value), nil
 			case "!=":
-				return &BooleanVal{Value: leftNum.Value != rightNum.Value}, nil
+				return fastBool(leftNum.Value != rightNum.Value), nil
 			case "<":
-				return &BooleanVal{Value: leftNum.Value < rightNum.Value}, nil
+				return fastBool(leftNum.Value < rightNum.Value), nil
 			case "<=":
-				return &BooleanVal{Value: leftNum.Value <= rightNum.Value}, nil
+				return fastBool(leftNum.Value <= rightNum.Value), nil
 			case ">":
-				return &BooleanVal{Value: leftNum.Value > rightNum.Value}, nil
+				return fastBool(leftNum.Value > rightNum.Value), nil
 			case ">=":
-				return &BooleanVal{Value: leftNum.Value >= rightNum.Value}, nil
+				return fastBool(leftNum.Value >= rightNum.Value), nil
 			}
 		}
 	}
@@ -369,9 +530,9 @@ func evalBinaryExpr(expr *ast.BinaryExpr, scope *Environment) (RuntimeVal, *Erro
 		if rightBool, okRight := rightVal.(*BooleanVal); okRight {
 			switch expr.Operator {
 			case "&&":
-				return &BooleanVal{Value: leftBool.Value && rightBool.Value}, nil
+				return fastBool(leftBool.Value && rightBool.Value), nil
 			case "||":
-				return &BooleanVal{Value: leftBool.Value || rightBool.Value}, nil
+				return fastBool(leftBool.Value || rightBool.Value), nil
 			}
 		}
 	}
@@ -382,18 +543,46 @@ func evalBinaryExpr(expr *ast.BinaryExpr, scope *Environment) (RuntimeVal, *Erro
 		case *StringVal:
 			switch expr.Operator {
 			case "+":
-				return &StringVal{Value: leftStr.Value + r.Value}, nil
+				// Fast string concat using builder for large strings
+				if len(leftStr.Value) > 100 || len(r.Value) > 100 {
+					result := make([]byte, 0, len(leftStr.Value)+len(r.Value))
+					result = append(result, leftStr.Value...)
+					result = append(result, r.Value...)
+					return fastString(string(result)), nil
+				}
+				return fastString(leftStr.Value + r.Value), nil
 			case "==":
-				return &BooleanVal{Value: leftStr.Value == r.Value}, nil
+				return fastBool(leftStr.Value == r.Value), nil
 			case "!=":
-				return &BooleanVal{Value: leftStr.Value != r.Value}, nil
+				return fastBool(leftStr.Value != r.Value), nil
 			default:
 				return nil, NewError(fmt.Sprintf("unknown operator %s for string operands", expr.Operator), 0, 0)
 			}
 		default:
 			if expr.Operator == "+" {
-				return &StringVal{Value: leftStr.Value + rightVal.String()}, nil
+				return fastString(leftStr.Value + rightVal.String()), nil
 			}
+		}
+	}
+
+	// Handle null comparisons
+	if _, leftNull := leftVal.(*NullVal); leftNull {
+		if _, rightNull := rightVal.(*NullVal); rightNull {
+			switch expr.Operator {
+			case "==": return fastBool(true), nil
+			case "!=": return fastBool(false), nil
+			}
+		} else {
+			switch expr.Operator {
+			case "==": return fastBool(false), nil
+			case "!=": return fastBool(true), nil
+			}
+		}
+	}
+	if _, rightNull := rightVal.(*NullVal); rightNull {
+		switch expr.Operator {
+		case "==": return fastBool(false), nil
+		case "!=": return fastBool(true), nil
 		}
 	}
 
@@ -402,11 +591,19 @@ func evalBinaryExpr(expr *ast.BinaryExpr, scope *Environment) (RuntimeVal, *Erro
 		if rightBool, okRight := rightVal.(*BooleanVal); okRight {
 			switch expr.Operator {
 			case "==":
-				return &BooleanVal{Value: leftBool.Value == rightBool.Value}, nil
+				return fastBool(leftBool.Value == rightBool.Value), nil
 			case "!=":
-				return &BooleanVal{Value: leftBool.Value != rightBool.Value}, nil
+				return fastBool(leftBool.Value != rightBool.Value), nil
 			}
 		}
+	}
+
+	// Handle mixed type comparisons for ==, !=
+	if expr.Operator == "==" {
+		return fastBool(false), nil // Different types are never equal
+	}
+	if expr.Operator == "!=" {
+		return fastBool(true), nil // Different types are never equal
 	}
 
 	return nil, NewError(fmt.Sprintf("unknown operator %s for types %s and %s", expr.Operator, leftVal.Type(), rightVal.Type()), 0, 0)
@@ -683,12 +880,12 @@ func evalUnaryExpr(expr *ast.UnaryExpr, scope *Environment) (RuntimeVal, *Error)
 	}
 
 	if expr.Operator == "++" {
-		newVal := &NumberVal{Value: num.Value + 1}
+		newVal := fastNumber(num.Value + 1)
 		scope.AssignVar(operand.Symbol, newVal)
 		if expr.Prefix { return newVal, nil }
 		return num, nil
 	} else if expr.Operator == "--" {
-		newVal := &NumberVal{Value: num.Value - 1}
+		newVal := fastNumber(num.Value - 1)
 		scope.AssignVar(operand.Symbol, newVal)
 		if expr.Prefix { return newVal, nil }
 		return num, nil

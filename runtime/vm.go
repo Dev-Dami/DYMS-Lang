@@ -1,6 +1,7 @@
 package runtime
 
 import (
+	"DYMS/ast"
 	"fmt"
 	"math"
 )
@@ -193,7 +194,7 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 			fr.ip++
 			callee := vm.stack[vm.sp-argc-1]
 			switch f := callee.(type) {
-			case Function:
+		case Function:
 				args := make([]RuntimeVal, argc)
 				for i := argc - 1; i >= 0; i-- {
 					args[i] = vm.pop()
@@ -204,9 +205,21 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 					return nil, err
 				}
 				vm.push(res)
-			case *VMFunction:
+		case *VMFunction:
 				vm.callFunction(f, argc)
-			default:
+		case *UserFunction:
+				// Call interpreter function from VM
+				args := make([]RuntimeVal, argc)
+				for i := argc - 1; i >= 0; i-- {
+					args[i] = vm.pop()
+				}
+				vm.pop()
+				res, err := vm.callInterpreterFunction(f, args)
+				if err != nil {
+					return nil, err
+				}
+				vm.push(res)
+		default:
 				return nil, NewError("not a function", 0, 0)
 			}
 		case OP_RET:
@@ -430,6 +443,110 @@ func (vm *VM) Run(entry *VMFunction) (RuntimeVal, *Error) {
 		return vm.pop(), nil
 	}
 	return &NullVal{}, nil
+}
+
+// Call interpreter function from VM context
+func (vm *VM) callInterpreterFunction(uf *UserFunction, args []RuntimeVal) (RuntimeVal, *Error) {
+	// Create call environment
+	callEnv := NewEnvironment(uf.Env)
+	for idx, name := range uf.Params {
+		var val RuntimeVal
+		if idx < len(args) {
+			val = args[idx]
+		} else {
+			val = fastNull()
+		}
+		callEnv.DeclareVar(name, val, false)
+	}
+	
+	// Execute function body in interpreter
+	res, err := evalBlockStatement(uf.Body.(*ast.BlockStatement), callEnv)
+	if err != nil {
+		return nil, err
+	}
+	if rv, ok := res.(*ReturnVal); ok {
+		return rv.Inner, nil
+	}
+	return res, nil
+}
+
+// Call VM function from interpreter context
+func (vm *VM) callVMFunction(vmFunc *VMFunction, args []RuntimeVal) (RuntimeVal, *Error) {
+	// Push arguments to VM stack
+	for _, arg := range args {
+		vm.push(arg)
+	}
+	
+	// Execute VM function
+	vm.callFunction(vmFunc, len(args))
+	
+	// Run VM until completion
+	for len(vm.frames) > 0 {
+		fr := &vm.frames[len(vm.frames)-1]
+		code := fr.fn.Chunk.Code
+		consts := fr.fn.Chunk.Consts
+		if fr.ip >= len(code) {
+			vm.frames = vm.frames[:len(vm.frames)-1]
+			if len(vm.frames) == 0 {
+				break
+			}
+			continue
+		}
+		op := OpCode(code[fr.ip])
+		fr.ip++
+		
+		switch op {
+		case OP_RET:
+			retVal := vm.pop()
+			frame := vm.frames[len(vm.frames)-1]
+			vm.frames = vm.frames[:len(vm.frames)-1]
+			if len(vm.frames) == 0 {
+				return retVal, nil
+			}
+			vm.sp = frame.base - 1
+			vm.push(retVal)
+		default:
+			// Execute other opcodes using main VM loop logic
+			fr.ip-- // Reset IP for main loop
+			result, err := vm.executeOpcode(op, code, consts, fr)
+			if err != nil {
+				return nil, err
+			}
+			if result != nil {
+				return result, nil
+			}
+		}
+	}
+	
+	if vm.sp > 0 {
+		return vm.pop(), nil
+	}
+	return fastNull(), nil
+}
+
+// Execute single opcode (extracted from main Run loop)
+func (vm *VM) executeOpcode(op OpCode, code []int, consts []RuntimeVal, fr *frame) (RuntimeVal, *Error) {
+	// This is a simplified version - in practice you'd extract the full switch from Run()
+	switch op {
+	case OP_CONST:
+		idx := code[fr.ip]
+		fr.ip++
+		vm.push(consts[idx])
+	case OP_ADD:
+		r := vm.pop()
+		l := vm.pop()
+		if ln, ok1 := l.(*NumberVal); ok1 {
+			if rn, ok2 := r.(*NumberVal); ok2 {
+				vm.push(fastNumber(ln.Value + rn.Value))
+				return nil, nil
+			}
+		}
+		return nil, NewError("unsupported add operation", 0, 0)
+	case OP_RET:
+		retVal := vm.pop()
+		return retVal, nil
+	}
+	return nil, nil
 }
 
 func (op OpCode) String() string {

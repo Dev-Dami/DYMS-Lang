@@ -1,0 +1,13 @@
+import "time" as t
+import "fmaths" as math
+
+let t0 = t.millis()
+for range(i, 2000000) { 
+    math.sin(i)
+}
+let t1 = t.millis()
+
+
+println("loopTest took " + (t1 - t0) + " ms")
+
+println("Answer: " + math.sin(30))

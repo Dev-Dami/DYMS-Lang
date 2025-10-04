@@ -33,11 +33,9 @@ func main() {
 	// env -> for program
 	env := runtime.GlobalEnv
 
-	// compile -> vm -> run
-	compiler := runtime.NewCompiler()
-	entry := compiler.Compile(program)
-	vm := runtime.NewVM(env)
-	_, rerr := vm.Run(entry)
+	// Use hybrid execution engine (VM for functions, interpreter for complex operations)
+	hybrid := runtime.NewHybridEngine(env)
+	_, rerr := hybrid.Execute(program)
 	if rerr != nil {
 		fmt.Fprintln(os.Stderr, rerr.Error())
 		os.Exit(1)
